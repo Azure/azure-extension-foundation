@@ -44,11 +44,32 @@ func main() {
 		os.Exit(-1)
 	}
 
-	sequence.SetExtensionMostRecentSequenceNumber(environmentMrseq)
+	err = sequence.SetExtensionMostRecentSequenceNumber(environmentMrseq)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(-1)
+	}
+
+	err = status.ReportTransitioning(environmentMrseq, "install", "installation in progress")
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(-1)
+	}
 
 	var publicSettings PublicSettings
 	var protectedSettings ProtectedSettings
-	settings.GetExtensionSettings(environmentMrseq, &publicSettings, &protectedSettings)
+	err = settings.GetExtensionSettings(environmentMrseq, &publicSettings, &protectedSettings)
+	if err != nil {
+		status.ReportError(environmentMrseq, "install", err.Error())
+		fmt.Println(err.Error())
+		os.Exit(-1)
+	}
+
+	err = status.ReportSuccess(environmentMrseq, "install", "installation in complete")
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(-1)
+	}
 }
 ```
 
