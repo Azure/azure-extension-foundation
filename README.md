@@ -24,8 +24,8 @@ type PublicSettings struct {
 
 // extension specific ProtectedSettings
 type ProtectedSettings struct {
-	SecretString       string   `json:"SecretString"`
-	SecretScript       string   `json:"SecretScript"`
+	SecretString       string   `json:"secretString"`
+	SecretScript       string   `json:"secretScript"`
 	FileURLs           []string `json:"fileUris"`
 	StorageAccountName string   `json:"storageAccountName"`
 	StorageAccountKey  string   `json:"storageAccountKey"`
