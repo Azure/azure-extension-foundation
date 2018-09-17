@@ -1,8 +1,6 @@
 package sequence
 
-import (
-	"azure-extension-foundation/internal/sequence"
-)
+import "github.com/Azure/azure-extension-foundation/internal/sequence"
 
 // GetMostRecentSequenceNumber return the extension and environment most recent sequence number
 func GetMostRecentSequenceNumber() (int, int, error) {

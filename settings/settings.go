@@ -1,6 +1,6 @@
 package settings
 
-import "azure-extension-foundation/internal/settings"
+import "github.com/Azure/azure-extension-foundation/internal/settings"
 
 // GetExtensionSettings reads the settings for the provided sequenceNumber and assigns the settings to the
 // respective structure reference

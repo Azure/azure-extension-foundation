@@ -1,8 +1,6 @@
 package status
 
-import (
-	"azure-extension-foundation/internal/status"
-)
+import "github.com/Azure/azure-extension-foundation/internal/status"
 
 type ExtensionStatus string
 

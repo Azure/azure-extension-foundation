@@ -1,9 +1,9 @@
 package status
 
 import (
-	"azure-extension-foundation/internal/settings"
 	"encoding/json"
 	"fmt"
+	"github.com/Azure/azure-extension-foundation/internal/settings"
 	"io/ioutil"
 	"os"
 	"path/filepath"
