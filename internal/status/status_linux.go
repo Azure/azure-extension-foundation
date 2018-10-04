@@ -1,10 +1,13 @@
 package status
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/Azure/azure-extension-foundation/internal/settings"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 type statusReport []statusItem
