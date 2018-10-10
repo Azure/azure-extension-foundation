@@ -31,7 +31,7 @@ func issueRequest(operation string, url string, headers map[string]string, paylo
 	client := &http.Client{}
 
 	request, err := http.NewRequest(operation, url, nil)
-	if payload.Len() != 0 {
+	if payload != nil && payload.Len() != 0 {
 		request, err = http.NewRequest(operation, url, payload)
 	}
 
