@@ -1,6 +1,6 @@
 # Azure extension foundation
 This repository contains the foundation source code for Azure Virtual Machine extension developers.
-This source code is meant to be used by Microsoft Azure employees publishing Virtual Machine extensions and the source code is open sourced under Apache 2.0 License for reference. You can read the User Guide below.
+This source code is meant to be used by Microsoft Azure employees publishing Virtual Machine extensions and the source code is open sourced under MIT License for reference. You can read the User Guide below.
 
 * [Learn more: Azure Virtual Machine Extensions](https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-extensions-features/)
 
