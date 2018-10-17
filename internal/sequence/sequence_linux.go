@@ -1,8 +1,8 @@
 package sequence
 
 import (
-	"github.com/Azure/azure-extension-foundation/internal/settings"
 	"fmt"
+	"github.com/Azure/azure-extension-foundation/internal/settings"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -65,7 +65,7 @@ func findExtensionMostRecentSequenceNumber() (int, error) {
 	mrseqStr, err := ioutil.ReadFile(mostRecentSequenceFileName)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return 0, nil
+			return -1, nil
 		}
 		return -1, fmt.Errorf("failed to read mrseq file : %s", err)
 	}
