@@ -5,6 +5,8 @@ package settings
 
 import "github.com/Azure/azure-extension-foundation/internal/settings"
 
+type HandlerEnvironment = settings.HandlerEnvironment
+
 // GetExtensionSettings reads the settings for the provided sequenceNumber and assigns the settings to the
 // respective structure reference
 func GetExtensionSettings(sequenceNumber int, publicSettings, protectedSettings interface{}) error {
