@@ -1,8 +1,8 @@
 package sequence
 
 import (
-	"github.com/Azure/azure-extension-foundation/internal/settings"
 	"fmt"
+	"github.com/Azure/azure-extension-foundation/internal/settings"
 	"io/ioutil"
 	"os"
 	"path/filepath"

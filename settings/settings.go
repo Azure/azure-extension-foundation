@@ -7,3 +7,8 @@ import "github.com/Azure/azure-extension-foundation/internal/settings"
 func GetExtensionSettings(sequenceNumber int, publicSettings, protectedSettings interface{}) error {
 	return settings.GetExtensionSettings(sequenceNumber, publicSettings, protectedSettings)
 }
+
+// GetHandlerEnvironment returns the handler environment properties
+func GetHandlerEnvironment() (settings.HandlerEnvironment, error) {
+	return settings.GetEnvironment()
+}
