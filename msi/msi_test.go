@@ -5,24 +5,20 @@ package msi
 
 import (
 	"encoding/json"
-	"github.com/Azure/azure-extension-foundation/httputil"
 	"testing"
 )
 
-func TestGetMsi(t *testing.T) {
-	m, err := GetMsi()
-	if err != nil {
-		t.Log(err)
-		t.FailNow()
-	}
+type httpClientMock struct {
+	get_f func(url string, headers map[string]string) (responseCode int, body []byte, err error)
+}
 
-	t.Log(m.AccessToken)
-	t.Log("Hello")
+func (h httpClientMock) Get(url string, headers map[string]string) (responseCode int, body []byte, err error) {
+	return h.get_f(url, headers)
 }
 
 func TestSuccessfulGetMsi(t *testing.T) {
 	const tokenValue = "token"
-	httputil.Get = func(url string, headers map[string]string) (int, []byte, error) {
+	httpClient := httpClientMock{get_f: func(url string, headers map[string]string) (responseCode int, body []byte, err error) {
 		m := Msi{AccessToken: tokenValue,
 			ClientID:     "",
 			ExpiresIn:    "",
@@ -37,9 +33,10 @@ func TestSuccessfulGetMsi(t *testing.T) {
 			return 0, nil, err
 		}
 		return 200, o, nil
-	}
+	}}
+	provider := NewMsiProvider(&httpClient)
 
-	msi, err := GetMsi()
+	msi, err := provider.GetMsi()
 	if err != nil {
 		t.FailNow()
 	}
@@ -51,11 +48,12 @@ func TestSuccessfulGetMsi(t *testing.T) {
 
 func TestGetMsiReturns400(t *testing.T) {
 	// metadata service will return 400 if MSI is disable
-	httputil.Get = func(url string, headers map[string]string) (int, []byte, error) {
+	httpClient := httpClientMock{get_f: func(url string, headers map[string]string) (responseCode int, body []byte, err error) {
 		return 400, nil, nil
-	}
+	}}
+	provider := NewMsiProvider(&httpClient)
 
-	_, err := GetMsi()
+	_, err := provider.GetMsi()
 	if err == nil {
 		t.FailNow()
 	}
