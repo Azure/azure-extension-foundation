@@ -2,7 +2,6 @@ package metadata
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 )
 
@@ -28,13 +27,6 @@ func NewMetadataProvider(client httpClient) provider {
 type httpClient interface {
 	Get(url string, headers map[string]string) (responseCode int, body []byte, err error)
 }
-
-//type AddressObject struct {
-//	Ipv6       map[string][]interface{}       `json:"ipv6"`
-//	MacAddress string                         `json:"macAddress"`
-//	Ipv4       map[string][]map[string]string `json:"ipv4"`
-//	misc       interface{}
-//}
 
 type MetadataCompute struct {
 	Loocation             string      `json:"location"`
@@ -69,7 +61,7 @@ func (provider *provider)GetMetadata() (Metadata, error) {
 	}
 	responseString := string(responseBody[:])
 	if responseCode != 200 {
-		return retval, errors.New(fmt.Sprintf("Get request for metadata returned return code %v.\nResponse Body: %s", responseCode, responseString))
+		return retval, fmt.Errorf("Get request for metadata returned return code %v.\nResponse Body: %s", responseCode, responseString)
 	}
 	err = json.Unmarshal(responseBody[:], &retval)
 	return retval, err
