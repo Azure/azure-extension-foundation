@@ -51,3 +51,11 @@ func (p *provider) GetMsi() (Msi, error) {
 
 	return msi, nil
 }
+
+func (msi *Msi) GetJson() string {
+	jsonBytes, err := json.Marshal(msi)
+	if err != nil {
+		panic(err.Error())
+	}
+	return string(jsonBytes[:])
+}
