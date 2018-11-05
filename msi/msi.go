@@ -8,7 +8,7 @@ import (
 	"fmt"
 )
 
-const metadataMsiURL = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com/"
+const metadataMsiURL = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.core.windows.net/"
 
 type Msi struct {
 	AccessToken  string `json:"access_token"`
