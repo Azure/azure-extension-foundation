@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT license.
+
 package httputil
 
 import (
@@ -12,10 +15,18 @@ const (
 	operationGet    = "GET"
 	operationPost   = "POST"
 	operationDelete = "DELETE"
+	operationPut    = "PUT"
 )
 
-type HttpClient struct {
+type Client struct {
 	httpClient *http.Client
+}
+
+type HttpClient interface {
+	Get(url string, headers map[string]string) (responseCode int, body []byte, err error)
+	Post(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error)
+	Put(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error)
+	Delete(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error)
 }
 
 func NewSecureHttpClient() HttpClient {
@@ -25,7 +36,7 @@ func NewSecureHttpClient() HttpClient {
 
 	transport := &http.Transport{TLSClientConfig: tlsConfig}
 	httpClient := &http.Client{Transport: transport}
-	return HttpClient{httpClient}
+	return &Client{httpClient}
 }
 
 func NewSecureHttpClientWithCertificates(certificate string, key string) HttpClient {
@@ -41,7 +52,7 @@ func NewSecureHttpClientWithCertificates(certificate string, key string) HttpCli
 
 	transport := &http.Transport{TLSClientConfig: tlsConfig}
 	httpClient := &http.Client{Transport: transport}
-	return HttpClient{httpClient}
+	return &Client{httpClient}
 }
 
 func NewInsecureHttpClientWithCertificates(certificate string, key string) HttpClient {
@@ -59,25 +70,29 @@ func NewInsecureHttpClientWithCertificates(certificate string, key string) HttpC
 	transport := &http.Transport{TLSClientConfig: tlsConfig}
 	httpClient := &http.Client{Transport: transport}
 
-	return HttpClient{httpClient}
+	return &Client{httpClient}
 }
 
 // Get issues a get request
-func (client *HttpClient) Get(url string, headers map[string]string) (responseCode int, body []byte, err error) {
+func (client *Client) Get(url string, headers map[string]string) (responseCode int, body []byte, err error) {
 	return client.issueRequest(operationGet, url, headers, nil)
 }
 
 // Post issues a post request
-func (client *HttpClient) Post(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error) {
+func (client *Client) Post(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error) {
 	return client.issueRequest(operationPost, url, headers, bytes.NewBuffer(payload))
 }
 
+func (client *Client) Put(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error) {
+	return client.issueRequest(operationPut, url, headers, bytes.NewBuffer(payload))
+}
+
 // Delete issues a delete request
-func (client *HttpClient) Delete(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error) {
+func (client *Client) Delete(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error) {
 	return client.issueRequest(operationDelete, url, headers, bytes.NewBuffer(payload))
 }
 
-func (client *HttpClient) issueRequest(operation string, url string, headers map[string]string, payload *bytes.Buffer) (int, []byte, error) {
+func (client *Client) issueRequest(operation string, url string, headers map[string]string, payload *bytes.Buffer) (int, []byte, error) {
 	request, err := http.NewRequest(operation, url, nil)
 	if payload != nil && payload.Len() != 0 {
 		request, err = http.NewRequest(operation, url, payload)

@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT license.
+
 package metadata
 
 import (
@@ -32,7 +35,7 @@ var dummyMetadataJson = `{
                         "ipAddress": [
                             {
                                 "privateIpAddress": "0.0.0.0",
-                                "publicIpAddress": "0.0.0.0"
+                                "publicIpAddress": "10.0.1.0"
                             }
                         ],
                         "subnet": [
@@ -53,13 +56,21 @@ var dummyMetadataJson = `{
     }`
 
 func TestGetMetadataObjectFromJson(t *testing.T) {
-	metadata, err := GetMetadataFromJsonString(&dummyMetadataJson)
+	prov := NewMetadataProvider(&httputil.MockHttpClient{Getfunc: func(url string, headers map[string]string) (responseCode int, body []byte, err error) {
+		return 200, []byte(dummyMetadataJson), nil
+	}})
+
+	metadata, err := prov.GetMetadata()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	hostname := metadata.Compute.Name
 	if hostname != "some-computer" {
-		t.Fatalf("Hostname does not match. Expected: \"some-computer\", Actual: %s", hostname)
+		t.Fatalf("Hostname does not match. Expected: \"some-computer\", Actual: \"%s\"", hostname)
+	}
+	ipAddress := metadata.GetIpV4PublicAddress()
+	if ipAddress != "10.0.1.0" {
+		t.Fatalf("Ip address does not match. Expected: \"10.0.1.0\", Actual: \"%s\"", ipAddress)
 	}
 }
 
@@ -73,7 +84,11 @@ func TestEmptyHostnameFromMetadata(t *testing.T) {
         "network": {
         }
     }`
-	metadata, err := GetMetadataFromJsonString(&testJson)
+
+	prov := NewMetadataProvider(&httputil.MockHttpClient{Getfunc: func(url string, headers map[string]string) (responseCode int, body []byte, err error) {
+		return 200, []byte(testJson), nil
+	}})
+	metadata, err := prov.GetMetadata()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -86,7 +101,7 @@ func TestEmptyHostnameFromMetadata(t *testing.T) {
 func TestRealMetadata(t *testing.T) {
 	t.Skip() // for testing on Azure VM only
 	client := httputil.NewSecureHttpClient()
-	prov := provider{&client}
+	prov := provider{client}
 	metadata, err := prov.GetMetadata()
 	if err != nil {
 		t.Fatal(err.Error())
