@@ -12,6 +12,7 @@ const (
 	operationGet    = "GET"
 	operationPost   = "POST"
 	operationDelete = "DELETE"
+	operationPut = "PUT"
 )
 
 type HttpClient struct {
@@ -70,6 +71,10 @@ func (client *HttpClient) Get(url string, headers map[string]string) (responseCo
 // Post issues a post request
 func (client *HttpClient) Post(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error) {
 	return client.issueRequest(operationPost, url, headers, bytes.NewBuffer(payload))
+}
+
+func (client *HttpClient) Put(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error) {
+	return client.issueRequest(operationPut, url, headers, bytes.NewBuffer(payload))
 }
 
 // Delete issues a delete request

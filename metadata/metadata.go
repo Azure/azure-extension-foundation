@@ -53,6 +53,33 @@ func GetMetadataFromJsonString(jsonString *string) (Metadata, error) {
 	return retval, err
 }
 
+func (metadata *Metadata)GetIpV4PublicAddress() (string) {
+	defaultIp := "0.0.0.0"
+	interface0Bytes, err := json.Marshal(metadata.Network.Intrfc[0]["ipv4"])
+	if err != nil {
+		return defaultIp
+	}
+	var interface0ipv4 map[string][]map[string]string
+	err = json.Unmarshal(interface0Bytes, &interface0ipv4)
+	if err != nil {
+		return defaultIp
+	}
+	retval := ""
+	if len(interface0ipv4["ipAddress"]) > 0{
+		retval = interface0ipv4["ipAddress"][0]["publicIpAddress"]
+	}
+
+	if retval == ""{
+		return defaultIp
+	}
+	return retval
+}
+
+func(metadata *Metadata) GetAzureResourceId() string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/virtualMachines/%s",
+		metadata.Compute.SubscriptionId, metadata.Compute.ResourceGroupName, metadata.Compute.Name)
+}
+
 func (provider *provider)GetMetadata() (Metadata, error) {
 	retval := Metadata{}
 	responseCode, responseBody, err := provider.httpClient.Get(metadataUrl, map[string]string{"Metadata": "true"})

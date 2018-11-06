@@ -32,7 +32,7 @@ var dummyMetadataJson = `{
                         "ipAddress": [
                             {
                                 "privateIpAddress": "0.0.0.0",
-                                "publicIpAddress": "0.0.0.0"
+                                "publicIpAddress": "10.0.1.0"
                             }
                         ],
                         "subnet": [
@@ -59,7 +59,11 @@ func TestGetMetadataObjectFromJson(t *testing.T) {
 	}
 	hostname := metadata.Compute.Name
 	if hostname != "some-computer" {
-		t.Fatalf("Hostname does not match. Expected: \"some-computer\", Actual: %s", hostname)
+		t.Fatalf("Hostname does not match. Expected: \"some-computer\", Actual: \"%s\"", hostname)
+	}
+	ipAddress := metadata.GetIpV4PublicAddress()
+	if ipAddress != "10.0.1.0"{
+		t.Fatalf("Ip address does not match. Expected: \"10.0.1.0\", Actual: \"%s\"", ipAddress)
 	}
 }
 
