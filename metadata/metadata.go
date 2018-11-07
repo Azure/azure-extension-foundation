@@ -29,7 +29,7 @@ func NewMetadataProvider(client httputil.HttpClient) provider {
 }
 
 type MetadataCompute struct {
-	Loocation             string      `json:"location"`
+	Location              string      `json:"location"`
 	Name                  string      `json:"name"`
 	Offer                 string      `json:"offer"`
 	OsType                string      `json:"osType"`
