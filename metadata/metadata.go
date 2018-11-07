@@ -3,6 +3,7 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Azure/azure-extension-foundation/httputil"
 )
 
 const metadataUrl = "http://169.254.169.254/metadata/instance?api-version=2017-08-01"
@@ -17,15 +18,11 @@ type MetadataNetwork struct {
 }
 
 type provider struct {
-	httpClient httpClient
+	httpClient httputil.HttpClient
 }
 
-func NewMetadataProvider(client httpClient) provider {
+func NewMetadataProvider(client httputil.HttpClient) provider {
 	return provider{httpClient: client}
-}
-
-type httpClient interface {
-	Get(url string, headers map[string]string) (responseCode int, body []byte, err error)
 }
 
 type MetadataCompute struct {

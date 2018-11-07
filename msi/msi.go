@@ -6,6 +6,7 @@ package msi
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Azure/azure-extension-foundation/httputil"
 )
 
 const metadataMsiURL = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.core.windows.net/"
@@ -22,14 +23,10 @@ type Msi struct {
 }
 
 type provider struct {
-	httpClient httpClient
+	httpClient httputil.HttpClient
 }
 
-type httpClient interface {
-	Get(url string, headers map[string]string) (responseCode int, body []byte, err error)
-}
-
-func NewMsiProvider(client httpClient) provider {
+func NewMsiProvider(client httputil.HttpClient) provider {
 	return provider{httpClient: client}
 }
 
@@ -52,10 +49,7 @@ func (p *provider) GetMsi() (Msi, error) {
 	return msi, nil
 }
 
-func (msi *Msi) GetJson() string {
+func (msi *Msi) GetJson() (string, error) {
 	jsonBytes, err := json.Marshal(msi)
-	if err != nil {
-		panic(err.Error())
-	}
-	return string(jsonBytes[:])
+	return string(jsonBytes[:]), err
 }

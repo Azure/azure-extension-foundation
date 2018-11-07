@@ -53,7 +53,11 @@ var dummyMetadataJson = `{
     }`
 
 func TestGetMetadataObjectFromJson(t *testing.T) {
-	metadata, err := GetMetadataFromJsonString(&dummyMetadataJson)
+	prov := NewMetadataProvider(&httputil.MockHttpClient{Getfunc: func(url string, headers map[string]string) (responseCode int, body []byte, err error) {
+		return 200, []byte(dummyMetadataJson), nil
+	}})
+
+	metadata, err := prov.GetMetadata()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -77,7 +81,11 @@ func TestEmptyHostnameFromMetadata(t *testing.T) {
         "network": {
         }
     }`
-	metadata, err := GetMetadataFromJsonString(&testJson)
+
+	prov := NewMetadataProvider(&httputil.MockHttpClient{Getfunc: func(url string, headers map[string]string) (responseCode int, body []byte, err error) {
+		return 200, []byte(testJson), nil
+	}})
+	metadata, err := prov.GetMetadata()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -90,7 +98,7 @@ func TestEmptyHostnameFromMetadata(t *testing.T) {
 func TestRealMetadata(t *testing.T) {
 	t.Skip() // for testing on Azure VM only
 	client := httputil.NewSecureHttpClient()
-	prov := provider{&client}
+	prov := provider{client}
 	metadata, err := prov.GetMetadata()
 	if err != nil {
 		t.Fatal(err.Error())

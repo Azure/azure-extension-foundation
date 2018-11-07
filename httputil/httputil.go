@@ -15,8 +15,15 @@ const (
 	operationPut = "PUT"
 )
 
-type HttpClient struct {
+type InbuiltHttpClient struct {
 	httpClient *http.Client
+}
+
+type HttpClient interface {
+	Get(url string, headers map[string]string) (responseCode int, body []byte, err error)
+	Post(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error)
+	Put(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error)
+	Delete(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error)
 }
 
 func NewSecureHttpClient() HttpClient {
@@ -26,7 +33,7 @@ func NewSecureHttpClient() HttpClient {
 
 	transport := &http.Transport{TLSClientConfig: tlsConfig}
 	httpClient := &http.Client{Transport: transport}
-	return HttpClient{httpClient}
+	return &InbuiltHttpClient{httpClient}
 }
 
 func NewSecureHttpClientWithCertificates(certificate string, key string) HttpClient {
@@ -42,7 +49,7 @@ func NewSecureHttpClientWithCertificates(certificate string, key string) HttpCli
 
 	transport := &http.Transport{TLSClientConfig: tlsConfig}
 	httpClient := &http.Client{Transport: transport}
-	return HttpClient{httpClient}
+	return &InbuiltHttpClient{httpClient}
 }
 
 func NewInsecureHttpClientWithCertificates(certificate string, key string) HttpClient {
@@ -60,29 +67,29 @@ func NewInsecureHttpClientWithCertificates(certificate string, key string) HttpC
 	transport := &http.Transport{TLSClientConfig: tlsConfig}
 	httpClient := &http.Client{Transport: transport}
 
-	return HttpClient{httpClient}
+	return &InbuiltHttpClient{httpClient}
 }
 
 // Get issues a get request
-func (client *HttpClient) Get(url string, headers map[string]string) (responseCode int, body []byte, err error) {
+func (client *InbuiltHttpClient) Get(url string, headers map[string]string) (responseCode int, body []byte, err error) {
 	return client.issueRequest(operationGet, url, headers, nil)
 }
 
 // Post issues a post request
-func (client *HttpClient) Post(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error) {
+func (client *InbuiltHttpClient) Post(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error) {
 	return client.issueRequest(operationPost, url, headers, bytes.NewBuffer(payload))
 }
 
-func (client *HttpClient) Put(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error) {
+func (client *InbuiltHttpClient) Put(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error) {
 	return client.issueRequest(operationPut, url, headers, bytes.NewBuffer(payload))
 }
 
 // Delete issues a delete request
-func (client *HttpClient) Delete(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error) {
+func (client *InbuiltHttpClient) Delete(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error) {
 	return client.issueRequest(operationDelete, url, headers, bytes.NewBuffer(payload))
 }
 
-func (client *HttpClient) issueRequest(operation string, url string, headers map[string]string, payload *bytes.Buffer) (int, []byte, error) {
+func (client *InbuiltHttpClient) issueRequest(operation string, url string, headers map[string]string, payload *bytes.Buffer) (int, []byte, error) {
 	request, err := http.NewRequest(operation, url, nil)
 	if payload != nil && payload.Len() != 0 {
 		request, err = http.NewRequest(operation, url, payload)
