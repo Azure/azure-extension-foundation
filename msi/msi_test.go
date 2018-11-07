@@ -12,7 +12,6 @@ import (
 	"testing"
 )
 
-
 func TestSuccessfulGetMsi(t *testing.T) {
 	const tokenValue = "token"
 	httpClient := httputil.MockHttpClient{Getfunc: func(url string, headers map[string]string) (responseCode int, body []byte, err error) {
@@ -44,7 +43,7 @@ func TestSuccessfulGetMsi(t *testing.T) {
 }
 
 func TestGetMsiReturns400(t *testing.T) {
-	// metadata service will return 400 if MSI is disable
+	// metadata service will return 400 if MSI is disabled
 	httpClient := httputil.MockHttpClient{Getfunc: func(url string, headers map[string]string) (responseCode int, body []byte, err error) {
 		return 400, nil, nil
 	}}

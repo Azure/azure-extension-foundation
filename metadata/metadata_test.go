@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT license.
+
 package metadata
 
 import (
@@ -66,7 +69,7 @@ func TestGetMetadataObjectFromJson(t *testing.T) {
 		t.Fatalf("Hostname does not match. Expected: \"some-computer\", Actual: \"%s\"", hostname)
 	}
 	ipAddress := metadata.GetIpV4PublicAddress()
-	if ipAddress != "10.0.1.0"{
+	if ipAddress != "10.0.1.0" {
 		t.Fatalf("Ip address does not match. Expected: \"10.0.1.0\", Actual: \"%s\"", ipAddress)
 	}
 }
