@@ -59,7 +59,7 @@ func TestCanGetMsi(t *testing.T) {
 	t.Skip() // for testing on Azure VM only
 	outdir := "./testoutput"
 	os.Mkdir(outdir, 0777)
-	secureHttpClient := httputil.NewSecureHttpClient()
+	secureHttpClient := httputil.NewSecureHttpClient(httputil.NoRetry)
 	msiProvider := NewMsiProvider(secureHttpClient)
 	msi, err := msiProvider.GetMsi()
 	if err != nil {

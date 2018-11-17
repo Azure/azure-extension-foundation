@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 )
 
 const (
@@ -18,10 +19,6 @@ const (
 	operationPut    = "PUT"
 )
 
-type Client struct {
-	httpClient *http.Client
-}
-
 type HttpClient interface {
 	Get(url string, headers map[string]string) (responseCode int, body []byte, err error)
 	Post(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error)
@@ -29,17 +26,47 @@ type HttpClient interface {
 	Delete(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error)
 }
 
-func NewSecureHttpClient() HttpClient {
+type Client struct {
+	httpClient    *http.Client
+	retryBehavior RetryBehavior
+}
+
+type RetryBehavior = func(int) bool // return false to end retries
+
+var NoRetry = func(i int) bool {
+	return false
+}
+
+var LinearRetryThrice = func(i int) bool {
+	time.Sleep(time.Second * 3)
+	if i < 3 {
+		return true // retry if count < 3
+	}
+	return false
+}
+
+var ExponentialRetryThrice = func(i int) bool {
+	time.Sleep(time.Second * time.Duration(3^(i+1)))
+	if i < 3 {
+		return true // retry if count < 3
+	}
+	return false
+}
+
+func NewSecureHttpClient(retryBehavior RetryBehavior) HttpClient {
 	tlsConfig := &tls.Config{
 		Renegotiation: tls.RenegotiateFreelyAsClient,
 	}
 
 	transport := &http.Transport{TLSClientConfig: tlsConfig}
 	httpClient := &http.Client{Transport: transport}
-	return &Client{httpClient}
+	return &Client{httpClient, retryBehavior}
 }
 
-func NewSecureHttpClientWithCertificates(certificate string, key string) HttpClient {
+func NewSecureHttpClientWithCertificates(certificate string, key string, retryBehavior RetryBehavior) HttpClient {
+	if retryBehavior == nil {
+		panic("Retry policy must be specified")
+	}
 	cert, err := tls.LoadX509KeyPair(certificate, key)
 	if err != nil {
 		log.Fatal(err)
@@ -52,10 +79,13 @@ func NewSecureHttpClientWithCertificates(certificate string, key string) HttpCli
 
 	transport := &http.Transport{TLSClientConfig: tlsConfig}
 	httpClient := &http.Client{Transport: transport}
-	return &Client{httpClient}
+	return &Client{httpClient, retryBehavior}
 }
 
-func NewInsecureHttpClientWithCertificates(certificate string, key string) HttpClient {
+func NewInsecureHttpClient(certificate string, key string, retryBehavior RetryBehavior) HttpClient {
+	if retryBehavior == nil {
+		panic("Retry policy must be specified")
+	}
 	cert, err := tls.LoadX509KeyPair(certificate, key)
 	if err != nil {
 		log.Fatal(err)
@@ -70,7 +100,7 @@ func NewInsecureHttpClientWithCertificates(certificate string, key string) HttpC
 	transport := &http.Transport{TLSClientConfig: tlsConfig}
 	httpClient := &http.Client{Transport: transport}
 
-	return &Client{httpClient}
+	return &Client{httpClient, retryBehavior}
 }
 
 // Get issues a get request
@@ -83,6 +113,7 @@ func (client *Client) Post(url string, headers map[string]string, payload []byte
 	return client.issueRequest(operationPost, url, headers, bytes.NewBuffer(payload))
 }
 
+// Put issues a put request
 func (client *Client) Put(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error) {
 	return client.issueRequest(operationPut, url, headers, bytes.NewBuffer(payload))
 }
@@ -103,6 +134,11 @@ func (client *Client) issueRequest(operation string, url string, headers map[str
 	}
 
 	res, err := client.httpClient.Do(request)
+
+	for i := 0; (err != nil || res.StatusCode >= 500) && client.retryBehavior(i); i++ {
+		res, err = client.httpClient.Do(request)
+	}
+
 	if err != nil {
 		return -1, nil, err
 	}

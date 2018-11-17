@@ -100,7 +100,7 @@ func TestEmptyHostnameFromMetadata(t *testing.T) {
 
 func TestRealMetadata(t *testing.T) {
 	t.Skip() // for testing on Azure VM only
-	client := httputil.NewSecureHttpClient()
+	client := httputil.NewSecureHttpClient(httputil.NoRetry)
 	prov := provider{client}
 	metadata, err := prov.GetMetadata()
 	if err != nil {
