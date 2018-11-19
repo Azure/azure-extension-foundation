@@ -31,7 +31,10 @@ type Client struct {
 	retryBehavior RetryBehavior
 }
 
-type RetryBehavior = func(int) bool // return false to end retries
+type RetryBehavior = func(i int) bool
+
+// return false to end retries
+// i starts from 1 keeps getting incremented while function returns true
 
 var NoRetry = func(i int) bool {
 	return false
@@ -46,7 +49,7 @@ var LinearRetryThrice = func(i int) bool {
 }
 
 var ExponentialRetryThrice = func(i int) bool {
-	time.Sleep(time.Second * time.Duration(3^(i+1)))
+	time.Sleep(time.Second * time.Duration(3^(i)))
 	if i < 3 {
 		return true // retry if count < 3
 	}
@@ -135,7 +138,7 @@ func (client *Client) issueRequest(operation string, url string, headers map[str
 
 	res, err := client.httpClient.Do(request)
 
-	for i := 0; (err != nil || res.StatusCode >= 500) && client.retryBehavior(i); i++ {
+	for i := 1; (err != nil || res.StatusCode >= 500) && client.retryBehavior(i); i++ {
 		res, err = client.httpClient.Do(request)
 	}
 
