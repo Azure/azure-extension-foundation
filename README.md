@@ -1,10 +1,11 @@
 # Azure extension foundation
 This repository contains the foundation source code for Azure Virtual Machine extension developers.
-This source code is meant to be used by Microsoft Azure employees publishing Virtual Machine extensions and the source code is open sourced under MIT License for reference. You can read the User Guide below.
+This source code is meant to be used by developpers publishing Virtual Machine extensions and the source code is open sourced under MIT License for reference. You can read the User Guide below.
 
 * [Learn more: Azure Virtual Machine Extensions](https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-extensions-features/)
 
 # Usage
+### Status reporting, sequence tracking and settings manipulation
 
 ```go
 package main
@@ -68,6 +69,44 @@ func main() {
 	err = status.ReportSuccess(environmentMrseq, "install", "installation in complete")
 	if err != nil {
 		fmt.Println(err.Error())
+		os.Exit(-1)
+	}
+}
+```
+### Simple http client
+``` go
+func main() {
+	client := httputil.NewSecureHttpClient(httputil.NoRetry)
+	status, response, err := client.Get("http://www.microsoft.com/", [header])
+	if err != nil {
+		fmt.Println("error issuing get call")
+		os.Exit(-1)
+	}
+}
+```
+
+### MSI
+``` go
+// struct definition; snippet from msi/msi.go
+type Msi struct {
+	AccessToken  string `json:"access_token"`
+	ClientID     string `json:"client_id"`
+	ExpiresIn    string `json:"expires_in"`
+	ExpiresOn    string `json:"expires_on"`
+	ExtExpiresIn string `json:"ext_expires_in"`
+	NotBefore    string `json:"not_before"`
+	Resource     string `json:"resource"`
+	TokenType    string `json:"token_type"`
+}
+```
+
+``` go
+func main(){
+	secureHttpClient := httputil.NewSecureHttpClient(httputil.NoRetry)
+	msiProvider := NewMsiProvider(secureHttpClient)
+	msi, err := msiProvider.GetMsi()
+	if err != nil {
+		fmt.Println("error getting msi")
 		os.Exit(-1)
 	}
 }
