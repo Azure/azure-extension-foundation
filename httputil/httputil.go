@@ -54,6 +54,10 @@ var ExponentialRetryThrice = func(i int) bool {
 }
 
 func NewSecureHttpClient(retryBehavior RetryBehavior) HttpClient {
+	if retryBehavior == nil {
+		panic("Retry policy must be specified")
+	}
+
 	tlsConfig := &tls.Config{
 		Renegotiation: tls.RenegotiateFreelyAsClient,
 	}
@@ -67,6 +71,7 @@ func NewSecureHttpClientWithCertificates(certificate string, key string, retryBe
 	if retryBehavior == nil {
 		panic("Retry policy must be specified")
 	}
+
 	cert, err := tls.LoadX509KeyPair(certificate, key)
 	if err != nil {
 		log.Fatal(err)
@@ -82,10 +87,11 @@ func NewSecureHttpClientWithCertificates(certificate string, key string, retryBe
 	return &Client{httpClient, retryBehavior}
 }
 
-func NewInsecureHttpClient(certificate string, key string, retryBehavior RetryBehavior) HttpClient {
+func NewInsecureHttpClientWithCertificates(certificate string, key string, retryBehavior RetryBehavior) HttpClient {
 	if retryBehavior == nil {
 		panic("Retry policy must be specified")
 	}
+
 	cert, err := tls.LoadX509KeyPair(certificate, key)
 	if err != nil {
 		log.Fatal(err)
