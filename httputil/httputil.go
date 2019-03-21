@@ -13,10 +13,10 @@ import (
 )
 
 const (
-	operationGet    = "GET"
-	operationPost   = "POST"
-	operationDelete = "DELETE"
-	operationPut    = "PUT"
+	OperationGet    = "GET"
+	OperationPost   = "POST"
+	OperationDelete = "DELETE"
+	OperationPut    = "PUT"
 )
 
 type HttpClient interface {
@@ -31,29 +31,41 @@ type Client struct {
 	retryBehavior RetryBehavior
 }
 
-type RetryBehavior = func(i int) bool
+type RetryBehavior = func(statusCode int, i int) bool
 
 // return false to end retries
 // i starts from 1 keeps getting incremented while function returns true
 
-var NoRetry = func(i int) bool {
+var NoRetry = func(statusCode int, i int) bool {
 	return false
 }
 
-var LinearRetryThrice = func(i int) bool {
+var LinearRetryThrice = func(statusCode int, i int) bool {
 	time.Sleep(time.Second * 3)
-	if i < 3 {
+	if i < 3 && isTransientHttpStatusCode(statusCode) {
 		return true // retry if count < 3
 	}
 	return false
 }
 
-var ExponentialRetryThrice = func(i int) bool {
+var ExponentialRetryThrice = func(statusCode int, i int) bool {
 	time.Sleep(time.Second * time.Duration(3^(i)))
-	if i < 3 {
+	if i < 3 && isTransientHttpStatusCode(statusCode) {
 		return true // retry if count < 3
 	}
 	return false
+}
+
+func isTransientHttpStatusCode(statusCode int) bool {
+	switch statusCode {
+	case 408, 429:
+		return true // timeout and too many requests
+	default:
+		if statusCode >= 500 && statusCode != 501 && statusCode != 505 {
+			return true
+		}
+		return false
+	}
 }
 
 func NewSecureHttpClient(retryBehavior RetryBehavior) HttpClient {
@@ -108,22 +120,22 @@ func NewInsecureHttpClient(certificate string, key string, retryBehavior RetryBe
 
 // Get issues a get request
 func (client *Client) Get(url string, headers map[string]string) (responseCode int, body []byte, err error) {
-	return client.issueRequest(operationGet, url, headers, nil)
+	return client.issueRequest(OperationGet, url, headers, nil)
 }
 
 // Post issues a post request
 func (client *Client) Post(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error) {
-	return client.issueRequest(operationPost, url, headers, bytes.NewBuffer(payload))
+	return client.issueRequest(OperationPost, url, headers, bytes.NewBuffer(payload))
 }
 
 // Put issues a put request
 func (client *Client) Put(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error) {
-	return client.issueRequest(operationPut, url, headers, bytes.NewBuffer(payload))
+	return client.issueRequest(OperationPut, url, headers, bytes.NewBuffer(payload))
 }
 
 // Delete issues a delete request
 func (client *Client) Delete(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error) {
-	return client.issueRequest(operationDelete, url, headers, bytes.NewBuffer(payload))
+	return client.issueRequest(OperationDelete, url, headers, bytes.NewBuffer(payload))
 }
 
 func (client *Client) issueRequest(operation string, url string, headers map[string]string, payload *bytes.Buffer) (int, []byte, error) {
@@ -138,7 +150,7 @@ func (client *Client) issueRequest(operation string, url string, headers map[str
 
 	res, err := client.httpClient.Do(request)
 
-	for i := 1; (err != nil || res.StatusCode >= 500) && client.retryBehavior(i); i++ {
+	for i := 1; err != nil && client.retryBehavior(res.StatusCode, i); i++ {
 		res, err = client.httpClient.Do(request)
 	}
 
