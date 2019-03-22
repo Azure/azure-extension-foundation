@@ -9,16 +9,6 @@ import (
 	"testing"
 )
 
-func TestErrorAndStatusCode(t *testing.T) {
-	httpClient := NewSecureHttpClient(NoRetry)
-	resCode, _, err := httpClient.Get("https://management.azure.com/subscriptions/422b6c61-95b0-4213-b3be-7282315df71d/resourceGroups/bhbrahmaEAP/providers/Microsoft.Automation/automationAccounts/bhbrahmaEAP/python2Packages?api-version=2018-06-30", *new(map[string]string))
-	if err == nil && !IsSuccessStatusCode(resCode) {
-		// success case
-		return
-	}
-	t.Fatal("Error is returned when request goes through")
-}
-
 type mockHttpClient struct {
 	AttemptCount *int
 	DoFunc       func(i *int, req *http.Request) (*http.Response, error)
