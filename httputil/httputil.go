@@ -26,8 +26,13 @@ type HttpClient interface {
 	Delete(url string, headers map[string]string, payload []byte) (responseCode int, body []byte, err error)
 }
 
+// for testing
+type httpClientInterface interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 type Client struct {
-	httpClient    *http.Client
+	httpClient    httpClientInterface
 	retryBehavior RetryBehavior
 }
 
@@ -42,7 +47,7 @@ var NoRetry = func(statusCode int, i int) bool {
 
 var LinearRetryThrice = func(statusCode int, i int) bool {
 	time.Sleep(time.Second * 3)
-	if i < 3 && isTransientHttpStatusCode(statusCode) {
+	if i < 3 && IsTransientHttpStatusCode(statusCode) {
 		return true // retry if count < 3
 	}
 	return false
@@ -50,20 +55,29 @@ var LinearRetryThrice = func(statusCode int, i int) bool {
 
 var ExponentialRetryThrice = func(statusCode int, i int) bool {
 	time.Sleep(time.Second * time.Duration(3^(i)))
-	if i < 3 && isTransientHttpStatusCode(statusCode) {
+	if i < 3 && IsTransientHttpStatusCode(statusCode) {
 		return true // retry if count < 3
 	}
 	return false
 }
 
-func isTransientHttpStatusCode(statusCode int) bool {
+func IsTransientHttpStatusCode(statusCode int) bool {
 	switch statusCode {
-	case 408, 429:
+	case 401, 408, 429:
 		return true // timeout and too many requests
 	default:
 		if statusCode >= 500 && statusCode != 501 && statusCode != 505 {
 			return true
 		}
+		return false
+	}
+}
+
+func IsSuccessStatusCode(statusCode int) bool {
+	switch statusCode {
+	case 200, 201:
+		return true
+	default:
 		return false
 	}
 }
@@ -150,8 +164,16 @@ func (client *Client) issueRequest(operation string, url string, headers map[str
 
 	res, err := client.httpClient.Do(request)
 
-	for i := 1; err != nil && client.retryBehavior(res.StatusCode, i); i++ {
-		res, err = client.httpClient.Do(request)
+	if err == nil && IsSuccessStatusCode(res.StatusCode) {
+		// no need to retry
+	} else if err == nil && res != nil {
+		// there was no error, so look at the status code to retry
+		for i := 1; client.retryBehavior(res.StatusCode, i); i++ {
+			res, err = client.httpClient.Do(request)
+			if err != nil {
+				break
+			}
+		}
 	}
 
 	if err != nil {

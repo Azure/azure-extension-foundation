@@ -14,21 +14,34 @@ import (
 )
 
 type msiHttpClient struct {
-	httpClient    *http.Client
+	httpClient    httpClientInterface
 	retryBehavior httputil.RetryBehavior
 	msi           *msi.Msi
 	msiProvider   msi.MsiProvider
 }
 
-func NewMsiHttpClient(retryBehavior httputil.RetryBehavior) httputil.HttpClient {
+var getHttpClientFunc = func() httpClientInterface {
 	tlsConfig := &tls.Config{
 		Renegotiation: tls.RenegotiateFreelyAsClient,
 	}
 
 	transport := &http.Transport{TLSClientConfig: tlsConfig}
-	httpClient := &http.Client{Transport: transport}
-	msiProvider := msi.NewMsiProvider(httputil.NewSecureHttpClient(retryBehavior))
-	return &msiHttpClient{httpClient, retryBehavior, nil, &msiProvider}
+	return &http.Client{Transport: transport}
+}
+
+type httpClientInterface interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+func NewMsiHttpClient(msiProvider msi.MsiProvider, retryBehavior httputil.RetryBehavior) httputil.HttpClient {
+	if retryBehavior == nil {
+		panic("Retry policy must be specified")
+	}
+	if msiProvider == nil {
+		panic("msiProvider must be specified")
+	}
+	httpClient := getHttpClientFunc()
+	return &msiHttpClient{httpClient, retryBehavior, nil, msiProvider}
 }
 
 func (client *msiHttpClient) Get(url string, headers map[string]string) (responseCode int, body []byte, err error) {
@@ -56,7 +69,7 @@ func (client *msiHttpClient) issueRequest(operation string, url string, headers 
 		request, err = http.NewRequest(operation, url, payload)
 	}
 
-	// Initialize msi is required
+	// Initialize msi as required
 	if client.msi == nil {
 		msi, err := client.msiProvider.GetMsi()
 		if err != nil {
@@ -73,17 +86,24 @@ func (client *msiHttpClient) issueRequest(operation string, url string, headers 
 
 	res, err := client.httpClient.Do(request)
 
-	for i := 1; err != nil && (res.StatusCode == 401 || client.retryBehavior(res.StatusCode, i)); i++ {
-		// refresh certificate if required
-		if res.StatusCode == 401 {
-			msi, err := client.msiProvider.GetMsi()
-			if err != nil {
-				return -1, nil, err
+	if err == nil && httputil.IsSuccessStatusCode(res.StatusCode) {
+		// no need to retry
+	} else if err == nil && res != nil {
+		for i := 1; client.retryBehavior(res.StatusCode, i); i++ {
+			// refresh certificate if required
+			if res.StatusCode == 401 {
+				msi, err := client.msiProvider.GetMsi()
+				if err != nil {
+					return -1, nil, err
+				}
+				client.msi = &msi
+				request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", client.msi.AccessToken))
 			}
-			client.msi = &msi
-			request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", client.msi.AccessToken))
+			res, err = client.httpClient.Do(request)
+			if err != nil {
+				break
+			}
 		}
-		res, err = client.httpClient.Do(request)
 	}
 
 	if err != nil {
