@@ -61,7 +61,7 @@ func TestNewMsiHttpClientHeaders(t *testing.T) {
 			},
 		}
 	}
-	msiHttp := NewMsiHttpClient(&mockMsiProvider{timesInvoked: 0}, httputil.ExponentialRetryThrice)
+	msiHttp := NewMsiHttpClient(&mockMsiProvider{timesInvoked: 0}, httputil.DefaultRetryBehavior)
 	msiHttp.Get("", make(map[string]string))
 }
 
@@ -82,7 +82,7 @@ func TestRetryLogic(t *testing.T) {
 			},
 		}
 	}
-	msiHttp := NewMsiHttpClient(&mockMsi, httputil.ExponentialRetryThrice)
+	msiHttp := NewMsiHttpClient(&mockMsi, httputil.DefaultRetryBehavior)
 	msiHttp.Get("", make(map[string]string))
 	if mockMsi.timesInvoked < 2 {
 		t.Fatal("retry logic didn't invoke msiProvider for retries")

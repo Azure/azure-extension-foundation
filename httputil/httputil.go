@@ -41,11 +41,14 @@ type RetryBehavior = func(statusCode int, i int) bool
 // return false to end retries
 // i starts from 1 keeps getting incremented while function returns true
 
-var NoRetry = func(statusCode int, i int) bool {
+var NoRetry RetryBehavior = func(statusCode int, i int) bool {
 	return false
 }
 
-var LinearRetryThrice = func(statusCode int, i int) bool {
+var LinearRetryThrice RetryBehavior = func(statusCode int, i int) bool {
+	if !isTransientHttpStatusCode(statusCode) {
+		return false
+	}
 	time.Sleep(time.Second * 3)
 	if i < 3 {
 		return true // retry if count < 3
@@ -53,7 +56,10 @@ var LinearRetryThrice = func(statusCode int, i int) bool {
 	return false
 }
 
-var ExponentialRetryThrice = func(statusCode int, i int) bool {
+var DefaultRetryBehavior = func(statusCode int, i int) bool {
+	if !isTransientHttpStatusCode(statusCode) {
+		return false
+	}
 	delay := time.Second * time.Duration(2^(i))
 	const maxDelay time.Duration = 60 * time.Second
 
@@ -69,25 +75,24 @@ var ExponentialRetryThrice = func(statusCode int, i int) bool {
 
 func isTransientHttpStatusCode(statusCode int) bool {
 	switch statusCode {
-	case 408, 429:
-		return true // timeout and too many requests
-	default:
-		if statusCode >= 500 && statusCode != 501 && statusCode != 505 {
-			return true
-		}
-		return false
-	}
-}
-
-func IsSuccessStatusCode(statusCode int) bool {
-	switch statusCode {
-	case http.StatusRequestTimeout, // 408
+	case
+		http.StatusUnauthorized,        // 401
+		http.StatusRequestTimeout,      // 408
 		http.StatusTooManyRequests,     // 429
 		http.StatusInternalServerError, // 500
 		http.StatusBadGateway,          // 502
 		http.StatusServiceUnavailable,  // 503
 		http.StatusGatewayTimeout:      // 504
 		return true // timeout and too many requests
+	default:
+		return false
+	}
+}
+
+func IsSuccessStatusCode(statusCode int) bool {
+	switch statusCode {
+	case 200, 201:
+		return true
 	default:
 		return false
 	}
@@ -179,7 +184,7 @@ func (client *Client) issueRequest(operation string, url string, headers map[str
 		// no need to retry
 	} else if err == nil && res != nil {
 		// there was no error, so look at the status code to retry
-		for i := 1; isTransientHttpStatusCode(res.StatusCode) && client.retryBehavior(res.StatusCode, i); i++ {
+		for i := 1; client.retryBehavior(res.StatusCode, i); i++ {
 			res, err = client.httpClient.Do(request)
 			if err != nil {
 				break
