@@ -47,23 +47,29 @@ var NoRetry = func(statusCode int, i int) bool {
 
 var LinearRetryThrice = func(statusCode int, i int) bool {
 	time.Sleep(time.Second * 3)
-	if i < 3 && IsTransientHttpStatusCode(statusCode) {
+	if i < 3 {
 		return true // retry if count < 3
 	}
 	return false
 }
 
 var ExponentialRetryThrice = func(statusCode int, i int) bool {
-	time.Sleep(time.Second * time.Duration(3^(i)))
-	if i < 3 && IsTransientHttpStatusCode(statusCode) {
+	delay := time.Second * time.Duration(2^(i))
+	const maxDelay time.Duration = 60 * time.Second
+
+	if delay > maxDelay {
+		delay = maxDelay
+	}
+	time.Sleep(delay)
+	if i < 5 {
 		return true // retry if count < 3
 	}
 	return false
 }
 
-func IsTransientHttpStatusCode(statusCode int) bool {
+func isTransientHttpStatusCode(statusCode int) bool {
 	switch statusCode {
-	case 401, 408, 429:
+	case 408, 429:
 		return true // timeout and too many requests
 	default:
 		if statusCode >= 500 && statusCode != 501 && statusCode != 505 {
@@ -75,8 +81,13 @@ func IsTransientHttpStatusCode(statusCode int) bool {
 
 func IsSuccessStatusCode(statusCode int) bool {
 	switch statusCode {
-	case 200, 201:
-		return true
+	case http.StatusRequestTimeout, // 408
+		http.StatusTooManyRequests,     // 429
+		http.StatusInternalServerError, // 500
+		http.StatusBadGateway,          // 502
+		http.StatusServiceUnavailable,  // 503
+		http.StatusGatewayTimeout:      // 504
+		return true // timeout and too many requests
 	default:
 		return false
 	}
@@ -168,7 +179,7 @@ func (client *Client) issueRequest(operation string, url string, headers map[str
 		// no need to retry
 	} else if err == nil && res != nil {
 		// there was no error, so look at the status code to retry
-		for i := 1; client.retryBehavior(res.StatusCode, i); i++ {
+		for i := 1; isTransientHttpStatusCode(res.StatusCode) && client.retryBehavior(res.StatusCode, i); i++ {
 			res, err = client.httpClient.Do(request)
 			if err != nil {
 				break
