@@ -22,6 +22,10 @@ type Msi struct {
 	TokenType    string `json:"token_type"`
 }
 
+type MsiProvider interface {
+	GetMsi() (Msi, error)
+}
+
 type provider struct {
 	httpClient httputil.HttpClient
 }
