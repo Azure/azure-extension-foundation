@@ -56,7 +56,8 @@ var LinearRetryThrice RetryBehavior = func(statusCode int, i int) bool {
 	return false
 }
 
-var DefaultRetryBehavior = func(statusCode int, i int) bool {
+// The default retry behavior is 5 retries with exponential back-off with a maximum wait time of 60 seconds
+var DefaultRetryBehavior RetryBehavior = func(statusCode int, i int) bool {
 	if !isTransientHttpStatusCode(statusCode) {
 		return false
 	}
@@ -68,7 +69,7 @@ var DefaultRetryBehavior = func(statusCode int, i int) bool {
 	}
 	time.Sleep(delay)
 	if i < 5 {
-		return true // retry if count < 3
+		return true
 	}
 	return false
 }
