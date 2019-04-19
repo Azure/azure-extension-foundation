@@ -6,9 +6,11 @@ package msihttpclient
 import (
 	"fmt"
 	"github.com/Azure/azure-extension-foundation/httputil"
+	"github.com/Azure/azure-extension-foundation/metadata"
 	"github.com/Azure/azure-extension-foundation/msi"
 	"io"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 )
@@ -49,6 +51,44 @@ func (noBody) Read(bytes []byte) (int, error)   { return 0, io.EOF }
 func (noBody) Close() error                     { return nil }
 func (noBody) WriteTo(io.Writer) (int64, error) { return 0, nil }
 
+var mdata = metadata.Metadata{
+	Compute: metadata.MetadataCompute{
+		VmId:              "vmid",
+		SubscriptionId:    "subId",
+		ResourceGroupName: "resourceGroupName",
+		Name:              "vmName",
+	},
+	Network: metadata.MetadataNetwork{},
+}
+
+func TestAddVmIdQueryParatmertoUrl(t *testing.T) {
+	getHttpClientFunc = func() httpClientInterface {
+		return &mockHttpClient{
+			DoFunc: func(i *int, req *http.Request) (*http.Response, error) {
+				authorization := req.Header.Get("Authorization")
+				if authorization != fmt.Sprintf("Bearer %s", dummyMsi.AccessToken) {
+					t.Fatal("authorization header didn't match")
+				}
+				return &http.Response{StatusCode: 200, Body: noBody{}}, nil
+			},
+		}
+	}
+	msiHttp := msiHttpClient{httpClient: getHttpClientFunc(), retryBehavior: httputil.DefaultRetryBehavior, msiProvider: &mockMsiProvider{timesInvoked: 0}, metadata: &mdata}
+	modifiedUrl, err := msiHttp.addVmIdQueryParatmertoUrl("http://foo.bar.com?query1=val1&query2=val2&speed=100")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(modifiedUrl) == 0 {
+		t.Fatal(fmt.Errorf("modifled url was of length 0"))
+	}
+
+	u, _ := url.Parse(modifiedUrl)
+
+	if u.Query().Get("vmResourceId") != mdata.GetAzureResourceId() {
+		t.Fatal(fmt.Errorf("the modified query does not contain the query parameter for ARM id"))
+	}
+}
+
 func TestNewMsiHttpClientHeaders(t *testing.T) {
 	getHttpClientFunc = func() httpClientInterface {
 		return &mockHttpClient{
@@ -61,7 +101,7 @@ func TestNewMsiHttpClientHeaders(t *testing.T) {
 			},
 		}
 	}
-	msiHttp := NewMsiHttpClient(&mockMsiProvider{timesInvoked: 0}, httputil.DefaultRetryBehavior)
+	msiHttp := NewMsiHttpClient(&mockMsiProvider{timesInvoked: 0}, &mdata, httputil.DefaultRetryBehavior)
 	msiHttp.Get("", make(map[string]string))
 }
 
@@ -82,7 +122,7 @@ func TestRetryLogic(t *testing.T) {
 			},
 		}
 	}
-	msiHttp := NewMsiHttpClient(&mockMsi, httputil.DefaultRetryBehavior)
+	msiHttp := NewMsiHttpClient(&mockMsi, &mdata, httputil.DefaultRetryBehavior)
 	msiHttp.Get("", make(map[string]string))
 	if mockMsi.timesInvoked < 2 {
 		t.Fatal("retry logic didn't invoke msiProvider for retries")

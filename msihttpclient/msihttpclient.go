@@ -8,9 +8,11 @@ import (
 	"crypto/tls"
 	"fmt"
 	"github.com/Azure/azure-extension-foundation/httputil"
+	"github.com/Azure/azure-extension-foundation/metadata"
 	"github.com/Azure/azure-extension-foundation/msi"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 )
 
 type msiHttpClient struct {
@@ -18,6 +20,7 @@ type msiHttpClient struct {
 	retryBehavior httputil.RetryBehavior
 	msi           *msi.Msi
 	msiProvider   msi.MsiProvider
+	metadata      *metadata.Metadata
 }
 
 var getHttpClientFunc = func() httpClientInterface {
@@ -33,7 +36,7 @@ type httpClientInterface interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-func NewMsiHttpClient(msiProvider msi.MsiProvider, retryBehavior httputil.RetryBehavior) httputil.HttpClient {
+func NewMsiHttpClient(msiProvider msi.MsiProvider, mdata *metadata.Metadata, retryBehavior httputil.RetryBehavior) httputil.HttpClient {
 	if retryBehavior == nil {
 		panic("Retry policy must be specified")
 	}
@@ -41,7 +44,7 @@ func NewMsiHttpClient(msiProvider msi.MsiProvider, retryBehavior httputil.RetryB
 		panic("msiProvider must be specified")
 	}
 	httpClient := getHttpClientFunc()
-	return &msiHttpClient{httpClient, retryBehavior, nil, msiProvider}
+	return &msiHttpClient{httpClient, retryBehavior, nil, msiProvider, mdata}
 }
 
 func (client *msiHttpClient) Get(url string, headers map[string]string) (responseCode int, body []byte, err error) {
@@ -63,10 +66,24 @@ func (client *msiHttpClient) Delete(url string, headers map[string]string, paylo
 	return client.issueRequest(httputil.OperationDelete, url, headers, bytes.NewBuffer(payload))
 }
 
+func (client *msiHttpClient) addVmIdQueryParatmertoUrl(u string) (string, error) {
+	qParams, err := url.Parse(u)
+	if err != nil {
+		return "", err
+	}
+	qParams.RawQuery = fmt.Sprintf("%s&vmResourceId=%s", qParams.RawQuery, client.metadata.GetAzureResourceId())
+	return qParams.String(), nil
+}
+
 func (client *msiHttpClient) issueRequest(operation string, url string, headers map[string]string, payload *bytes.Buffer) (int, []byte, error) {
-	request, err := http.NewRequest(operation, url, nil)
+	// add query parameter for vmId
+	modifiedUrl, err := client.addVmIdQueryParatmertoUrl(url)
+	if err != nil {
+		return -1, nil, err
+	}
+	request, err := http.NewRequest(operation, modifiedUrl, nil)
 	if payload != nil && payload.Len() != 0 {
-		request, err = http.NewRequest(operation, url, payload)
+		request, err = http.NewRequest(operation, modifiedUrl, payload)
 	}
 
 	// Initialize msi as required
