@@ -79,7 +79,7 @@ func TestAddVmIdQueryParameterToUrl(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(modifiedUrl) == 0 {
-		t.Fatal(fmt.Errorf("modifled url was of length 0"))
+		t.Fatal(fmt.Errorf("modified url was of length 0"))
 	}
 
 	u, _ := url.Parse(modifiedUrl)
