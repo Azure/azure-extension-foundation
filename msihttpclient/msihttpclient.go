@@ -66,7 +66,7 @@ func (client *msiHttpClient) Delete(url string, headers map[string]string, paylo
 	return client.issueRequest(httputil.OperationDelete, url, headers, bytes.NewBuffer(payload))
 }
 
-func (client *msiHttpClient) addVmIdQueryParatmertoUrl(u string) (string, error) {
+func (client *msiHttpClient) addVmIdQueryParameterToUrl(u string) (string, error) {
 	qParams, err := url.Parse(u)
 	if err != nil {
 		return "", err
@@ -77,7 +77,7 @@ func (client *msiHttpClient) addVmIdQueryParatmertoUrl(u string) (string, error)
 
 func (client *msiHttpClient) issueRequest(operation string, url string, headers map[string]string, payload *bytes.Buffer) (int, []byte, error) {
 	// add query parameter for vmId
-	modifiedUrl, err := client.addVmIdQueryParatmertoUrl(url)
+	modifiedUrl, err := client.addVmIdQueryParameterToUrl(url)
 	if err != nil {
 		return -1, nil, err
 	}

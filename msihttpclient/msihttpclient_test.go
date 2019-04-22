@@ -74,7 +74,7 @@ func TestAddVmIdQueryParatmertoUrl(t *testing.T) {
 		}
 	}
 	msiHttp := msiHttpClient{httpClient: getHttpClientFunc(), retryBehavior: httputil.DefaultRetryBehavior, msiProvider: &mockMsiProvider{timesInvoked: 0}, metadata: &mdata}
-	modifiedUrl, err := msiHttp.addVmIdQueryParatmertoUrl("http://foo.bar.com?query1=val1&query2=val2&speed=100")
+	modifiedUrl, err := msiHttp.addVmIdQueryParameterToUrl("http://foo.bar.com?query1=val1&query2=val2&speed=100")
 	if err != nil {
 		t.Fatal(err)
 	}
