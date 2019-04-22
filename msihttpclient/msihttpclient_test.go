@@ -61,7 +61,7 @@ var mdata = metadata.Metadata{
 	Network: metadata.MetadataNetwork{},
 }
 
-func TestAddVmIdQueryParatmertoUrl(t *testing.T) {
+func TestAddVmIdQueryParameterToUrl(t *testing.T) {
 	getHttpClientFunc = func() httpClientInterface {
 		return &mockHttpClient{
 			DoFunc: func(i *int, req *http.Request) (*http.Response, error) {
