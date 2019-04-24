@@ -77,7 +77,6 @@ var DefaultRetryBehavior RetryBehavior = func(statusCode int, i int) bool {
 func isTransientHttpStatusCode(statusCode int) bool {
 	switch statusCode {
 	case
-		http.StatusUnauthorized,        // 401
 		http.StatusRequestTimeout,      // 408
 		http.StatusTooManyRequests,     // 429
 		http.StatusInternalServerError, // 500

@@ -44,7 +44,10 @@ func NewMsiHttpClient(msiProvider msi.MsiProvider, mdata *metadata.Metadata, ret
 		panic("msiProvider must be specified")
 	}
 	httpClient := getHttpClientFunc()
-	return &msiHttpClient{httpClient, retryBehavior, nil, msiProvider, mdata}
+	mhc := msiHttpClient{httpClient, retryBehavior, nil, msiProvider, mdata}
+	mhc.refreshMsiAuthentication()
+	return &mhc
+
 }
 
 func (client *msiHttpClient) Get(url string, headers map[string]string) (responseCode int, body []byte, err error) {
@@ -75,6 +78,34 @@ func (client *msiHttpClient) addVmIdQueryParameterToUrl(u string) (string, error
 	return qParams.String(), nil
 }
 
+func (client *msiHttpClient) refreshMsiAuthentication() error {
+
+	if client.msi == nil {
+		myMsi, err := client.msiProvider.GetMsi()
+		if err != nil {
+			return err
+		}
+		client.msi = &myMsi
+	} else {
+		tokenExpired, err := client.msi.MsiTokenHasExpired()
+		if err != nil {
+			return err
+		}
+		if tokenExpired {
+			myMsi, err := client.msiProvider.GetMsi()
+			if err != nil {
+				return err
+			}
+			client.msi = &myMsi
+		}
+	}
+	return nil
+}
+
+func (client *msiHttpClient) addMsiHeader(request *http.Request) {
+	request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", client.msi.AccessToken))
+}
+
 func (client *msiHttpClient) issueRequest(operation string, url string, headers map[string]string, payload *bytes.Buffer) (int, []byte, error) {
 	// add query parameter for vmId
 	modifiedUrl, err := client.addVmIdQueryParameterToUrl(url)
@@ -86,36 +117,31 @@ func (client *msiHttpClient) issueRequest(operation string, url string, headers 
 		request, err = http.NewRequest(operation, modifiedUrl, payload)
 	}
 
-	// Initialize msi as required
-	if client.msi == nil {
-		msi, err := client.msiProvider.GetMsi()
-		if err != nil {
-			return -1, nil, err
-		}
-		client.msi = &msi
+	// Initialize as refresh msi as required
+	err = client.refreshMsiAuthentication()
+	if err != nil {
+		return -1, nil, err
 	}
-
 	// Add authorization if required
-	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", client.msi.AccessToken))
+	client.addMsiHeader(request)
+
+	// add headers
 	for key, value := range headers {
-		request.Header.Add(key, value)
+		request.Header.Set(key, value)
 	}
 
 	res, err := client.httpClient.Do(request)
-
 	if err == nil && httputil.IsSuccessStatusCode(res.StatusCode) {
 		// no need to retry
 	} else if err == nil && res != nil {
 		for i := 1; client.retryBehavior(res.StatusCode, i); i++ {
-			// refresh certificate if required
-			if res.StatusCode == 401 {
-				msi, err := client.msiProvider.GetMsi()
-				if err != nil {
-					return -1, nil, err
-				}
-				client.msi = &msi
-				request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", client.msi.AccessToken))
+			// Initialize as refresh msi as required
+			err = client.refreshMsiAuthentication()
+			if err != nil {
+				return -1, nil, err
 			}
+			// Add authorization if required
+			client.addMsiHeader(request)
 			res, err = client.httpClient.Do(request)
 			if err != nil {
 				break

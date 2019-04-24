@@ -11,28 +11,37 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"testing"
 	"time"
 )
 
-var dummyMsi = msi.Msi{
-	AccessToken:  "dummy access token",
-	ExpiresIn:    "1234",
-	NotBefore:    time.Now().String(),
-	ClientID:     "dummy client Id",
-	ExpiresOn:    time.Now().Add(time.Duration(time.Hour)).String(),
-	ExtExpiresIn: time.Duration(time.Hour).String(),
-	Resource:     "dummy resource",
-	TokenType:    "Bearer",
+var getDummyMsiFunc = func() *msi.Msi {
+	return &msi.Msi{
+		AccessToken:  "dummy access token",
+		ExpiresIn:    "1234",
+		NotBefore:    time.Now().String(),
+		ClientID:     "dummy client Id",
+		ExpiresOn:    strconv.FormatInt(time.Now().Unix(), 10),
+		ExtExpiresIn: time.Duration(time.Hour).String(),
+		Resource:     "dummy resource",
+		TokenType:    "Bearer",
+	}
 }
 
 type mockMsiProvider struct {
+	dummyMsi     *msi.Msi
 	timesInvoked int
 }
 
 func (prov *mockMsiProvider) GetMsi() (msi.Msi, error) {
 	prov.timesInvoked++
-	return dummyMsi, nil
+	if prov.dummyMsi == nil {
+		prov.dummyMsi = getDummyMsiFunc()
+	}
+	expiryTime, _ := prov.dummyMsi.GetExpiryTime()
+	prov.dummyMsi.ExpiresOn = strconv.FormatInt(expiryTime.Add(1*time.Minute).Unix(), 10)
+	return *prov.dummyMsi, nil
 }
 
 type mockHttpClient struct {
@@ -62,6 +71,7 @@ var mdata = metadata.Metadata{
 }
 
 func TestAddVmIdQueryParameterToUrl(t *testing.T) {
+	dummyMsi := getDummyMsiFunc()
 	getHttpClientFunc = func() httpClientInterface {
 		return &mockHttpClient{
 			DoFunc: func(i *int, req *http.Request) (*http.Response, error) {
@@ -90,6 +100,7 @@ func TestAddVmIdQueryParameterToUrl(t *testing.T) {
 }
 
 func TestNewMsiHttpClientHeaders(t *testing.T) {
+	dummyMsi := getDummyMsiFunc()
 	getHttpClientFunc = func() httpClientInterface {
 		return &mockHttpClient{
 			DoFunc: func(i *int, req *http.Request) (*http.Response, error) {
@@ -115,7 +126,7 @@ func TestRetryLogic(t *testing.T) {
 				(*i)++
 				switch *i {
 				case 1, 2:
-					return &http.Response{StatusCode: 401, Body: noBody{}}, nil
+					return &http.Response{StatusCode: 429, Body: noBody{}}, nil
 				default:
 					return &http.Response{StatusCode: 200, Body: noBody{}}, nil
 				}
@@ -124,7 +135,7 @@ func TestRetryLogic(t *testing.T) {
 	}
 	msiHttp := NewMsiHttpClient(&mockMsi, &mdata, httputil.DefaultRetryBehavior)
 	msiHttp.Get("", make(map[string]string))
-	if mockMsi.timesInvoked < 2 {
+	if mockMsi.timesInvoked < 3 {
 		t.Fatal("retry logic didn't invoke msiProvider for retries")
 	}
 }
