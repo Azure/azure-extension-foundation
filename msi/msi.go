@@ -56,7 +56,7 @@ func (p *provider) GetMsi() (Msi, error) {
 }
 
 // check expiry of MSI token based on time
-func (msi *Msi) MsiTokenHasExpired() (bool, error) {
+func (msi *Msi) IsMsiTokenExpired() (bool, error) {
 	// give it a 2 minute buffer before it expires
 	expiryTime, err := msi.GetExpiryTime()
 	if err != nil {

@@ -87,7 +87,7 @@ func (client *msiHttpClient) refreshMsiAuthentication() error {
 		}
 		client.msi = &myMsi
 	} else {
-		tokenExpired, err := client.msi.MsiTokenHasExpired()
+		tokenExpired, err := client.msi.IsMsiTokenExpired()
 		if err != nil {
 			return err
 		}
@@ -102,7 +102,7 @@ func (client *msiHttpClient) refreshMsiAuthentication() error {
 	return nil
 }
 
-func (client *msiHttpClient) addMsiHeader(request *http.Request) {
+func (client *msiHttpClient) setMsiAuthenticationHeader(request *http.Request) {
 	request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", client.msi.AccessToken))
 }
 
@@ -117,13 +117,13 @@ func (client *msiHttpClient) issueRequest(operation string, url string, headers 
 		request, err = http.NewRequest(operation, modifiedUrl, payload)
 	}
 
-	// Initialize as refresh msi as required
+	// Initialize and refresh msi as required
 	err = client.refreshMsiAuthentication()
 	if err != nil {
 		return -1, nil, err
 	}
 	// Add authorization if required
-	client.addMsiHeader(request)
+	client.setMsiAuthenticationHeader(request)
 
 	// add headers
 	for key, value := range headers {
@@ -141,7 +141,7 @@ func (client *msiHttpClient) issueRequest(operation string, url string, headers 
 				return -1, nil, err
 			}
 			// Add authorization if required
-			client.addMsiHeader(request)
+			client.setMsiAuthenticationHeader(request)
 			res, err = client.httpClient.Do(request)
 			if err != nil {
 				break
