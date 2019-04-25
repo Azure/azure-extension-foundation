@@ -22,8 +22,8 @@ func (client *mockHttpClient) Do(req *http.Request) (*http.Response, error) {
 type noBody struct {
 }
 
-var return401 = func(i *int, req *http.Request) (*http.Response, error) {
-	return &http.Response{StatusCode: 401, Body: noBody{}}, nil
+var return429 = func(i *int, req *http.Request) (*http.Response, error) {
+	return &http.Response{StatusCode: 429, Body: noBody{}}, nil
 }
 
 func (noBody) Read(bytes []byte) (int, error)   { return 0, io.EOF }
@@ -32,7 +32,7 @@ func (noBody) WriteTo(io.Writer) (int64, error) { return 0, nil }
 
 func TestRetryNever(t *testing.T) {
 	attemptCount := 0
-	mockClient := mockHttpClient{&attemptCount, return401}
+	mockClient := mockHttpClient{&attemptCount, return429}
 	client := Client{&mockClient, NoRetry}
 	client.Get("fake address", make(map[string]string))
 	if *mockClient.AttemptCount != 1 {
@@ -42,7 +42,7 @@ func TestRetryNever(t *testing.T) {
 
 func TestRetryThrice(t *testing.T) {
 	attemptCount := 0
-	mockClient := mockHttpClient{&attemptCount, return401}
+	mockClient := mockHttpClient{&attemptCount, return429}
 	client := Client{&mockClient, LinearRetryThrice}
 	client.Get("fake address", make(map[string]string))
 	if *mockClient.AttemptCount != 3 {
