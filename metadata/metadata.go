@@ -6,6 +6,7 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Azure/azure-extension-foundation/errorhelper"
 	"github.com/Azure/azure-extension-foundation/httputil"
 )
 
@@ -88,7 +89,8 @@ func (provider *provider) GetMetadata() (Metadata, error) {
 	}
 	responseString := string(responseBody[:])
 	if responseCode != 200 {
-		return retval, fmt.Errorf("Get request for metadata returned return code %v.\nResponse Body: %s", responseCode, responseString)
+		return retval, errorhelper.AddStackToError(
+			fmt.Errorf("Get request for metadata returned return code %v.\nResponse Body: %s", responseCode, responseString))
 	}
 	err = json.Unmarshal(responseBody[:], &retval)
 	return retval, err

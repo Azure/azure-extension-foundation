@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"fmt"
+	"github.com/Azure/azure-extension-foundation/errorhelper"
 	"github.com/Azure/azure-extension-foundation/httputil"
 	"github.com/Azure/azure-extension-foundation/metadata"
 	"github.com/Azure/azure-extension-foundation/msi"
@@ -110,7 +111,7 @@ func (client *msiHttpClient) issueRequest(operation string, url string, headers 
 	// add query parameter for vmId
 	modifiedUrl, err := client.addVmIdQueryParameterToUrl(url)
 	if err != nil {
-		return -1, nil, err
+		return -1, nil, errorhelper.AddStackToError(err)
 	}
 	request, err := http.NewRequest(operation, modifiedUrl, nil)
 	if payload != nil && payload.Len() != 0 {
@@ -120,7 +121,7 @@ func (client *msiHttpClient) issueRequest(operation string, url string, headers 
 	// Initialize and refresh msi as required
 	err = client.refreshMsiAuthentication()
 	if err != nil {
-		return -1, nil, err
+		return -1, nil, errorhelper.AddStackToError(err)
 	}
 	// Add authorization if required
 	client.setMsiAuthenticationHeader(request)
@@ -138,7 +139,7 @@ func (client *msiHttpClient) issueRequest(operation string, url string, headers 
 			// Initialize as refresh msi as required
 			err = client.refreshMsiAuthentication()
 			if err != nil {
-				return -1, nil, err
+				return -1, nil, errorhelper.AddStackToError(err)
 			}
 			// Add authorization if required
 			client.setMsiAuthenticationHeader(request)
@@ -150,14 +151,14 @@ func (client *msiHttpClient) issueRequest(operation string, url string, headers 
 	}
 
 	if err != nil {
-		return -1, nil, err
+		return -1, nil, errorhelper.AddStackToError(err)
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
 	res.Body.Close()
 	code := res.StatusCode
 	if err != nil {
-		return -1, nil, err
+		return -1, nil, errorhelper.AddStackToError(err)
 	}
 
 	return code, body, nil

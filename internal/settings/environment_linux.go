@@ -34,7 +34,7 @@ type HandlerEnvironment struct {
 func GetEnvironment() (environment HandlerEnvironment, _ error) {
 	dir, err := scriptDirectory()
 	if err != nil {
-		return environment, fmt.Errorf("vmextension: cannot find base directory of the running process: %v", err)
+		return environment, errorhelper.AddStackToError(fmt.Errorf("vmextension: cannot find base directory of the running process: %v", err))
 	}
 	paths := []string{
 		filepath.Join(dir, HandlerEnvFileName),       // this level (i.e. executable is in [EXT_NAME]/.)
@@ -44,14 +44,14 @@ func GetEnvironment() (environment HandlerEnvironment, _ error) {
 	for _, p := range paths {
 		o, err := ioutil.ReadFile(p)
 		if err != nil && !os.IsNotExist(err) {
-			return environment, fmt.Errorf("vmextension: error examining HandlerEnvironment at '%s': %v", p, err)
+			return environment, errorhelper.AddStackToError(fmt.Errorf("vmextension: error examining HandlerEnvironment at '%s': %v", p, err))
 		} else if err == nil {
 			b = o
 			break
 		}
 	}
 	if b == nil {
-		return environment, fmt.Errorf("vmextension: Cannot find HandlerEnvironment at paths: %s", strings.Join(paths, ", "))
+		return environment, errorhelper.AddStackToError(fmt.Errorf("vmextension: Cannot find HandlerEnvironment at paths: %s", strings.Join(paths, ", ")))
 	}
 	return parseEnvironmentManifest(b)
 }
@@ -70,10 +70,10 @@ func parseEnvironmentManifest(b []byte) (he HandlerEnvironment, _ error) {
 	var hf []HandlerEnvironment
 
 	if err := json.Unmarshal(b, &hf); err != nil {
-		return he, fmt.Errorf("vmextension: failed to parse handler env: %v", err)
+		return he, errorhelper.AddStackToError(fmt.Errorf("vmextension: failed to parse handler env: %v", err))
 	}
 	if len(hf) != 1 {
-		return he, fmt.Errorf("vmextension: expected 1 config in parsed HandlerEnvironment, found: %v", len(hf))
+		return he, errorhelper.AddStackToError(fmt.Errorf("vmextension: expected 1 config in parsed HandlerEnvironment, found: %v", len(hf)))
 	}
 	return hf[0], nil
 }

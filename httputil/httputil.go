@@ -6,6 +6,7 @@ package httputil
 import (
 	"bytes"
 	"crypto/tls"
+	"github.com/Azure/azure-extension-foundation/errorhelper"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -199,14 +200,14 @@ func (client *Client) issueRequest(operation string, url string, headers map[str
 	}
 
 	if err != nil {
-		return -1, nil, err
+		return -1, nil, errorhelper.AddStackToError(err)
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
 	res.Body.Close()
 	code := res.StatusCode
 	if err != nil {
-		return -1, nil, err
+		return -1, nil, errorhelper.AddStackToError(err)
 	}
 
 	return code, body, nil
