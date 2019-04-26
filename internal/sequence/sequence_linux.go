@@ -5,6 +5,7 @@ package sequence
 
 import (
 	"fmt"
+	"github.com/Azure/azure-extension-foundation/errorhelper"
 	"github.com/Azure/azure-extension-foundation/internal/settings"
 	"io/ioutil"
 	"os"
@@ -43,7 +44,7 @@ func SetExtensionMostRecentSequenceNumber(sequenceNumber int) error {
 func findEnvironmentMostRecentSequenceNumber(configFolder string) (int, error) {
 	g, err := filepath.Glob(configFolder + "/*.settings")
 	if err != nil {
-		return 0, err
+		return 0, errorhelper.AddStackToError(err)
 	}
 
 	sequence := make([]int, len(g))
@@ -74,7 +75,7 @@ func findExtensionMostRecentSequenceNumber() (int, error) {
 	}
 
 	mrseq, err := strconv.Atoi(string(mrseqStr))
-	return mrseq, nil
+	return mrseq, errorhelper.AddStackToError(err)
 }
 
 // setExtensionMostRecentSequenceNumber sets the extension mrseq by writing the current mrseq in the extension
@@ -83,7 +84,7 @@ func setExtensionMostRecentSequenceNumber(sequenceNumber int) error {
 	b := []byte(fmt.Sprintf("%v", sequenceNumber))
 	err := ioutil.WriteFile(mostRecentSequenceFileName, b, chmod)
 	if err != nil {
-		return err
+		return errorhelper.AddStackToError(err)
 	}
 	return nil
 }
