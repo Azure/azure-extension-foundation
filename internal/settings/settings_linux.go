@@ -71,10 +71,10 @@ func readSettings(sequenceNumber int) (public, protected map[string]interface{},
 // (of struct types that contain structured fields for settings).
 func unmarshalHandlerSettings(publicSettings, protectedSettings map[string]interface{}, publicV, protectedV interface{}) error {
 	if err := unmarshalSettings(publicSettings, &publicV); err != nil {
-		return errorhelper.AddStackToError(fmt.Errorf("failed to unmarshal public settings: %v", err))
+		return fmt.Errorf("failed to unmarshal public settings: %v", err)
 	}
 	if err := unmarshalSettings(protectedSettings, &protectedV); err != nil {
-		return errorhelper.AddStackToError(fmt.Errorf("failed to unmarshal protected settings: %v", err))
+		return fmt.Errorf("failed to unmarshal protected settings: %v", err)
 	}
 	return nil
 }
