@@ -6,6 +6,9 @@ import (
 )
 
 func AddStackToError(err error) error {
+	if err == nil {
+		return nil
+	}
 	stackString := string(debug.Stack())
 	return fmt.Errorf("%+v\nCallStack: %s", err, stackString)
 }
