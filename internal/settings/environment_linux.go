@@ -6,6 +6,7 @@ package settings
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Azure/azure-extension-foundation/errorhelper"
 	"io/ioutil"
 	"os"
 	"path/filepath"

@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/Azure/azure-extension-foundation/errorhelper"
 	"io/ioutil"
 	"os/exec"
 	"path/filepath"
