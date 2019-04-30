@@ -5,6 +5,7 @@ package sequence
 
 import (
 	"fmt"
+	"github.com/Azure/azure-extension-foundation/errorhelper"
 	"github.com/Azure/azure-extension-foundation/internal/settings"
 	"io/ioutil"
 	"os"
@@ -22,7 +23,7 @@ const chmod = os.FileMode(0600)
 func GetEnvironmentMostRecentSequenceNumber() (int, error) {
 	hEnv, err := settings.GetEnvironment()
 	if err != nil {
-		return -1, fmt.Errorf("unable to parse handler environment : %s", err)
+		return -1, errorhelper.AddStackToError(fmt.Errorf("unable to parse handler environment : %s", err))
 	}
 	return findEnvironmentMostRecentSequenceNumber(hEnv.HandlerEnvironment.ConfigFolder)
 }
@@ -43,7 +44,7 @@ func SetExtensionMostRecentSequenceNumber(sequenceNumber int) error {
 func findEnvironmentMostRecentSequenceNumber(configFolder string) (int, error) {
 	g, err := filepath.Glob(configFolder + "/*.settings")
 	if err != nil {
-		return 0, err
+		return 0, errorhelper.AddStackToError(err)
 	}
 
 	sequence := make([]int, len(g))
@@ -51,13 +52,13 @@ func findEnvironmentMostRecentSequenceNumber(configFolder string) (int, error) {
 		f := filepath.Base(v)
 		i, err := strconv.Atoi(strings.Replace(f, ".settings", "", 1))
 		if err != nil {
-			return 0, fmt.Errorf("can't parse int from filename: %s", f)
+			return 0, errorhelper.AddStackToError(fmt.Errorf("can't parse int from filename: %s", f))
 		}
 		sequence = append(sequence, i)
 	}
 
 	if len(sequence) == 0 {
-		return 0, fmt.Errorf("can't find out seqnum from %s, not enough files", configFolder)
+		return 0, errorhelper.AddStackToError(fmt.Errorf("can't find out seqnum from %s, not enough files", configFolder))
 	}
 	sort.Sort(sort.Reverse(sort.IntSlice(sequence)))
 	return sequence[0], nil
@@ -70,11 +71,11 @@ func findExtensionMostRecentSequenceNumber() (int, error) {
 		if os.IsNotExist(err) {
 			return -1, nil
 		}
-		return -1, fmt.Errorf("failed to read mrseq file : %s", err)
+		return -1, errorhelper.AddStackToError(fmt.Errorf("failed to read mrseq file : %s", err))
 	}
 
 	mrseq, err := strconv.Atoi(string(mrseqStr))
-	return mrseq, nil
+	return mrseq, errorhelper.AddStackToError(err)
 }
 
 // setExtensionMostRecentSequenceNumber sets the extension mrseq by writing the current mrseq in the extension
@@ -83,7 +84,7 @@ func setExtensionMostRecentSequenceNumber(sequenceNumber int) error {
 	b := []byte(fmt.Sprintf("%v", sequenceNumber))
 	err := ioutil.WriteFile(mostRecentSequenceFileName, b, chmod)
 	if err != nil {
-		return err
+		return errorhelper.AddStackToError(err)
 	}
 	return nil
 }

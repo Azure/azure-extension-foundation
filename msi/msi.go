@@ -6,6 +6,7 @@ package msi
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Azure/azure-extension-foundation/errorhelper"
 	"github.com/Azure/azure-extension-foundation/httputil"
 	"strconv"
 	"time"
@@ -44,12 +45,12 @@ func (p *provider) GetMsi() (Msi, error) {
 	}
 
 	if code != 200 {
-		return msi, fmt.Errorf("unable to get msi, metadata service response code %v", code)
+		return msi, errorhelper.AddStackToError(fmt.Errorf("unable to get msi, metadata service response code %v", code))
 	}
 
 	err = json.Unmarshal(body, &msi)
 	if err != nil {
-		return msi, fmt.Errorf("unable to deserialize metadata service response")
+		return msi, errorhelper.AddStackToError(fmt.Errorf("unable to deserialize metadata service response"))
 	}
 
 	return msi, nil
