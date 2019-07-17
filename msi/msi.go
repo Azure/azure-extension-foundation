@@ -8,11 +8,21 @@ import (
 	"fmt"
 	"github.com/Azure/azure-extension-foundation/errorhelper"
 	"github.com/Azure/azure-extension-foundation/httputil"
+	"net/url"
 	"strconv"
 	"time"
 )
 
-const metadataMsiURL = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.core.windows.net/"
+const (
+	metadataMsiURL     = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.core.windows.net/"
+	metadataMsiBaseURL = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01"
+
+	clinetIdQueryparm  = "client_id"
+	objectIdQueryparam = "object_id"
+	resourceQueryparam = "resource"
+
+	amrResourceUri = "https://management.core.windows.net/"
+)
 
 type Msi struct {
 	AccessToken  string `json:"access_token"`
@@ -37,23 +47,50 @@ func NewMsiProvider(client httputil.HttpClient) provider {
 	return provider{httpClient: client}
 }
 
-func (p *provider) GetMsi() (Msi, error) {
+func (p *provider) getMsiHelper(queryParams map[string]string) (*Msi, error) {
 	var msi = Msi{}
-	code, body, err := p.httpClient.Get(metadataMsiURL, map[string]string{"Metadata": "true"})
+	requestUrl, err := url.Parse(metadataMsiBaseURL)
 	if err != nil {
-		return msi, err
+		return &msi, err
+	}
+	for key, value := range queryParams {
+		requestUrl.Query().Add(key, value)
+	}
+
+	code, body, err := p.httpClient.Get(requestUrl.String(), map[string]string{"Metadata": "true"})
+	if err != nil {
+		return &msi, err
 	}
 
 	if code != 200 {
-		return msi, errorhelper.AddStackToError(fmt.Errorf("unable to get msi, metadata service response code %v", code))
+		return &msi, errorhelper.AddStackToError(fmt.Errorf("unable to get msi, metadata service response code %v", code))
 	}
 
 	err = json.Unmarshal(body, &msi)
 	if err != nil {
-		return msi, errorhelper.AddStackToError(fmt.Errorf("unable to deserialize metadata service response"))
+		return &msi, errorhelper.AddStackToError(fmt.Errorf("unable to deserialize metadata service response"))
 	}
+	return &msi, nil
+}
 
-	return msi, nil
+func (p *provider) GetMsi() (Msi, error) {
+	msi, err := p.getMsiHelper(map[string]string{resourceQueryparam: amrResourceUri})
+	return *msi, err
+}
+
+func (p *provider) GetMsiForResoruce(targetResource string) (Msi, error) {
+	msi, err := p.getMsiHelper(map[string]string{resourceQueryparam: targetResource})
+	return *msi, err
+}
+
+func (p *provider) GetMsiUsingClientId(clientId string, targetResource string) (Msi, error) {
+	msi, err := p.getMsiHelper(map[string]string{clinetIdQueryparm: clientId, resourceQueryparam: targetResource})
+	return *msi, err
+}
+
+func (p *provider) GetMsiUsingObjectId(objectId string, targetResource string) (Msi, error) {
+	msi, err := p.getMsiHelper(map[string]string{objectIdQueryparam: objectId, resourceQueryparam: targetResource})
+	return *msi, err
 }
 
 // check expiry of MSI token based on time

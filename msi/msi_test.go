@@ -75,3 +75,45 @@ func TestCanGetMsi(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 }
+
+func TestCanGetMsiForStorage(t *testing.T) {
+	t.Skip() // for testing on Azure VM only
+	outdir := "./testoutput"
+	os.Mkdir(outdir, 0777)
+	secureHttpClient := httputil.NewSecureHttpClient(httputil.NoRetry)
+	msiProvider := NewMsiProvider(secureHttpClient)
+	msi, err := msiProvider.GetMsiForResoruce("https://storage.azure.com/")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Logf("Successfully got msi token.\nClientId was : %s", msi.ClientID)
+	msiJsonBytes, err := json.Marshal(msi)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	err = ioutil.WriteFile(fmt.Sprintf("%s/msi.json", outdir), msiJsonBytes[:], 0700)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+}
+
+func TestCanGetMsiForKeyVault(t *testing.T) {
+	t.Skip() // for testing on Azure VM only
+	outdir := "./testoutput"
+	os.Mkdir(outdir, 0777)
+	secureHttpClient := httputil.NewSecureHttpClient(httputil.NoRetry)
+	msiProvider := NewMsiProvider(secureHttpClient)
+	msi, err := msiProvider.GetMsiForResoruce("https://vault.azure.net")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Logf("Successfully got msi token.\nClientId was : %s", msi.ClientID)
+	msiJsonBytes, err := json.Marshal(msi)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	err = ioutil.WriteFile(fmt.Sprintf("%s/msi.json", outdir), msiJsonBytes[:], 0700)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+}
