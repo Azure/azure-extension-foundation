@@ -53,9 +53,11 @@ func (p *provider) getMsiHelper(queryParams map[string]string) (*Msi, error) {
 	if err != nil {
 		return &msi, err
 	}
+	urlQuery := requestUrl.Query()
 	for key, value := range queryParams {
-		requestUrl.Query().Add(key, value)
+		urlQuery.Add(key, value)
 	}
+	requestUrl.RawQuery = urlQuery.Encode()
 
 	code, body, err := p.httpClient.Get(requestUrl.String(), map[string]string{"Metadata": "true"})
 	if err != nil {
