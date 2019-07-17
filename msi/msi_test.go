@@ -91,7 +91,7 @@ func TestCanGetMsiForStorage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	err = ioutil.WriteFile(fmt.Sprintf("%s/msi.json", outdir), msiJsonBytes[:], 0700)
+	err = ioutil.WriteFile(fmt.Sprintf("%s/msi2.json", outdir), msiJsonBytes[:], 0700)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -112,7 +112,7 @@ func TestCanGetMsiForKeyVault(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	err = ioutil.WriteFile(fmt.Sprintf("%s/msi.json", outdir), msiJsonBytes[:], 0700)
+	err = ioutil.WriteFile(fmt.Sprintf("%s/msi3.json", outdir), msiJsonBytes[:], 0700)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
