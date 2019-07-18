@@ -16,7 +16,7 @@ import (
 const (
 	metadataMsiBaseURL = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01"
 
-	clinetIdQueryparm  = "client_id"
+	clinetIdQueryparam = "client_id"
 	objectIdQueryparam = "object_id"
 	resourceQueryparam = "resource"
 
@@ -79,13 +79,13 @@ func (p *provider) GetMsi() (Msi, error) {
 	return *msi, err
 }
 
-func (p *provider) GetMsiForResoruce(targetResource string) (Msi, error) {
+func (p *provider) GetMsiForResource(targetResource string) (Msi, error) {
 	msi, err := p.getMsiHelper(map[string]string{resourceQueryparam: targetResource})
 	return *msi, err
 }
 
 func (p *provider) GetMsiUsingClientId(clientId string, targetResource string) (Msi, error) {
-	msi, err := p.getMsiHelper(map[string]string{clinetIdQueryparm: clientId, resourceQueryparam: targetResource})
+	msi, err := p.getMsiHelper(map[string]string{clinetIdQueryparam: clientId, resourceQueryparam: targetResource})
 	return *msi, err
 }
 

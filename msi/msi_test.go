@@ -82,7 +82,7 @@ func TestCanGetMsiForStorage(t *testing.T) {
 	os.Mkdir(outdir, 0777)
 	secureHttpClient := httputil.NewSecureHttpClient(httputil.NoRetry)
 	msiProvider := NewMsiProvider(secureHttpClient)
-	msi, err := msiProvider.GetMsiForResoruce("https://storage.azure.com/")
+	msi, err := msiProvider.GetMsiForResource("https://storage.azure.com/")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -103,7 +103,7 @@ func TestCanGetMsiForKeyVault(t *testing.T) {
 	os.Mkdir(outdir, 0777)
 	secureHttpClient := httputil.NewSecureHttpClient(httputil.NoRetry)
 	msiProvider := NewMsiProvider(secureHttpClient)
-	msi, err := msiProvider.GetMsiForResoruce("https://vault.azure.net")
+	msi, err := msiProvider.GetMsiForResource("https://vault.azure.net")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
