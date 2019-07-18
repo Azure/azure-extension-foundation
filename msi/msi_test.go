@@ -124,6 +124,7 @@ func TestCanGetMsiForKeyVaultWithClientId(t *testing.T) {
 	os.Mkdir(outdir, 0777)
 	secureHttpClient := httputil.NewSecureHttpClient(httputil.NoRetry)
 	msiProvider := NewMsiProvider(secureHttpClient)
+	// change client id to match your user managed identity
 	msi, err := msiProvider.GetMsiUsingClientId("31b403aa-c364-4240-a7ff-d85fb6cd7232", "https://vault.azure.net")
 	if err != nil {
 		t.Fatal(err.Error())
@@ -145,6 +146,7 @@ func TestCanGetMsiForStoragetWithObjectId(t *testing.T) {
 	os.Mkdir(outdir, 0777)
 	secureHttpClient := httputil.NewSecureHttpClient(httputil.NoRetry)
 	msiProvider := NewMsiProvider(secureHttpClient)
+	// change object id to match your user managed identity
 	msi, err := msiProvider.GetMsiUsingObjectId("20931e04-e65f-4526-8c01-9d627f577263", "https://storage.azure.com/")
 	if err != nil {
 		t.Fatal(err.Error())
