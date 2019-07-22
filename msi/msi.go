@@ -14,13 +14,13 @@ import (
 )
 
 const (
-	metadataMsiBaseURL = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01"
+	metadataIdentityURL = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01"
 
-	clinetIdQueryparam = "client_id"
-	objectIdQueryparam = "object_id"
-	resourceQueryparam = "resource"
+	clinetIdQueryParam = "client_id"
+	objectIdQueryParam = "object_id"
+	resourceQueryParam = "resource"
 
-	amrResourceUri = "https://management.core.windows.net/"
+	armResourceUri = "https://management.core.windows.net/"
 )
 
 type Msi struct {
@@ -48,7 +48,7 @@ func NewMsiProvider(client httputil.HttpClient) provider {
 
 func (p *provider) getMsiHelper(queryParams map[string]string) (*Msi, error) {
 	var msi = Msi{}
-	requestUrl, err := url.Parse(metadataMsiBaseURL)
+	requestUrl, err := url.Parse(metadataIdentityURL)
 	if err != nil {
 		return &msi, err
 	}
@@ -75,22 +75,22 @@ func (p *provider) getMsiHelper(queryParams map[string]string) (*Msi, error) {
 }
 
 func (p *provider) GetMsi() (Msi, error) {
-	msi, err := p.getMsiHelper(map[string]string{resourceQueryparam: amrResourceUri})
+	msi, err := p.getMsiHelper(map[string]string{resourceQueryParam: armResourceUri})
 	return *msi, err
 }
 
 func (p *provider) GetMsiForResource(targetResource string) (Msi, error) {
-	msi, err := p.getMsiHelper(map[string]string{resourceQueryparam: targetResource})
+	msi, err := p.getMsiHelper(map[string]string{resourceQueryParam: targetResource})
 	return *msi, err
 }
 
 func (p *provider) GetMsiUsingClientId(clientId string, targetResource string) (Msi, error) {
-	msi, err := p.getMsiHelper(map[string]string{clinetIdQueryparam: clientId, resourceQueryparam: targetResource})
+	msi, err := p.getMsiHelper(map[string]string{clinetIdQueryParam: clientId, resourceQueryParam: targetResource})
 	return *msi, err
 }
 
 func (p *provider) GetMsiUsingObjectId(objectId string, targetResource string) (Msi, error) {
-	msi, err := p.getMsiHelper(map[string]string{objectIdQueryparam: objectId, resourceQueryparam: targetResource})
+	msi, err := p.getMsiHelper(map[string]string{objectIdQueryParam: objectId, resourceQueryParam: targetResource})
 	return *msi, err
 }
 

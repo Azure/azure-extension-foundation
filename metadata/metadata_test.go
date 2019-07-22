@@ -20,7 +20,7 @@ var dummyMetadataJson = `{
             "platformFaultDomain": "0",
             "platformUpdateDomain": "0",
             "publisher": "some-publisher",
-            "resourceGroupName": "rome-resourceGroup",
+            "resourceGroupName": "some-resourceGroup",
             "sku": "some-sku",
             "subscriptionId": "aaaa0000-aa00-aa00-aa00-aaaaaa000000",
             "tags": "",
