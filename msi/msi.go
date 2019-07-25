@@ -36,6 +36,9 @@ type Msi struct {
 
 type MsiProvider interface {
 	GetMsi() (Msi, error)
+	GetMsiForResource(targetResource string) (Msi, error)
+	GetMsiUsingClientId(clientId string, targetResource string) (Msi, error)
+	GetMsiUsingObjectId(objectId string, targetResource string) (Msi, error)
 }
 
 type provider struct {

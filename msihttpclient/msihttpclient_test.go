@@ -44,6 +44,18 @@ func (prov *mockMsiProvider) GetMsi() (msi.Msi, error) {
 	return *prov.dummyMsi, nil
 }
 
+func (prov *mockMsiProvider) GetMsiForResource(targetResource string) (msi.Msi, error) {
+	return msi.Msi{}, nil
+}
+
+func (prov *mockMsiProvider) GetMsiUsingClientId(clientId string, targetResource string) (msi.Msi, error) {
+	return msi.Msi{}, nil
+}
+
+func (prov *mockMsiProvider) GetMsiUsingObjectId(objectId string, targetResource string) (msi.Msi, error) {
+	return msi.Msi{}, nil
+}
+
 type mockHttpClient struct {
 	AttemptCount *int
 	DoFunc       func(i *int, req *http.Request) (*http.Response, error)
