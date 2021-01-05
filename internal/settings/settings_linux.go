@@ -8,10 +8,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/Azure/azure-extension-foundation/errorhelper"
 	"io/ioutil"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/Azure/azure-extension-foundation/errorhelper"
 )
 
 const settingsFileSuffix = ".settings"
@@ -28,8 +29,32 @@ type handlerSettings struct {
 	SettingsCertThumbprint  string                 `json:"protectedSettingsCertThumbprint"`
 }
 
+// GetExtensionSettings fetches the extension settings for single config extensions.
+// The settings are read from <seqNo>.settings files located in the "configFolder" key in HandlerEnvironment.json file.
 func GetExtensionSettings(sequenceNumber int, publicSettings, protectedSettings interface{}) error {
-	publicSettingsJSON, protectedSettingsJSON, err := readSettings(sequenceNumber)
+	if err := getSettings(sequenceNumber, "", publicSettings, protectedSettings); err != nil {
+		retur errorhelper.AddStackToError(fmt.Errorf("failed to fetch extension settings : %s", err))
+	}
+
+	return nil
+}
+
+// GetMultiConfigExtensionSettings fetches the extension settings for multi-config extensions.
+// The settings are read from <extName>.<seqNo>.settings files located in the "configFolder" key in HandlerEnvironment.json file.
+func GetMultiConfigExtensionSettings(sequenceNumber int, extensionName string, publicSettings, protectedSettings interface{}) error {
+	if extensionName == "" {
+		return errorhelper.AddStackToError("Invalid Extension Name provided, it can not be empty for MultiConfig")
+	}
+
+	if err := getSettings(sequenceNumber, extensionName, publicSettings, protectedSettings); err != nil {
+		retur errorhelper.AddStackToError(fmt.Errorf("failed to fetch multiConfig extension settings : %s", err))
+	}
+
+	return nil
+}
+
+func getSettings(sequenceNumber int, extensionName string, publicSettings, protectedSettings interface{}) error {
+	publicSettingsJSON, protectedSettingsJSON, err := readSettings(sequenceNumber, extensionName)
 	if err != nil {
 		return errorhelper.AddStackToError(fmt.Errorf("error reading handler settings: %v", err))
 	}
@@ -44,14 +69,14 @@ func GetExtensionSettings(sequenceNumber int, publicSettings, protectedSettings 
 // ReadSettings locates the .settings file and returns public settings
 // JSON, and protected settings JSON (by decrypting it with the keys in
 // configFolder).
-func readSettings(sequenceNumber int) (public, protected map[string]interface{}, _ error) {
+func readSettings(sequenceNumber int, extensionName string) (public, protected map[string]interface{}, _ error) {
 	hEnv, err := GetEnvironment()
 	if err != nil {
 		return nil, nil, errorhelper.AddStackToError(fmt.Errorf("unable to get handler environment: %v", err))
 	}
 	configFolderPath := hEnv.HandlerEnvironment.ConfigFolder
 
-	cf, err := settingsFilePath(configFolderPath, sequenceNumber)
+	cf, err := settingsFilePath(configFolderPath, sequenceNumber, extensionName)
 	if err != nil {
 		return nil, nil, errorhelper.AddStackToError(fmt.Errorf("cannot locate settings file: %v", err))
 	}
@@ -82,8 +107,14 @@ func unmarshalHandlerSettings(publicSettings, protectedSettings map[string]inter
 
 // settingsFilePath returns the full path to the .settings file with the
 // highest sequence number found in configFolder.
-func settingsFilePath(configFolder string, sequenceNumber int) (string, error) {
-	return filepath.Join(configFolder, fmt.Sprintf("%d%s", sequenceNumber, settingsFileSuffix)), nil
+func settingsFilePath(configFolder string, sequenceNumber int, extensionName string) (string, error) {
+	if extensionName == "" {
+		// Single config scenario
+		return filepath.Join(configFolder, fmt.Sprintf("%d%s", sequenceNumber, settingsFileSuffix)), nil
+	}
+
+	// Multi-config scenario
+	return filepath.Join(configFolder, fmt.Sprintf("%s.%d%s", extensionName, sequenceNumber, settingsFileSuffix)), nil
 }
 
 // parseHandlerSettings parses a handler settings file (e.g. 0.settings) and
