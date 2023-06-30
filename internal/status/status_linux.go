@@ -6,12 +6,13 @@ package status
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Azure/azure-extension-foundation/errorhelper"
-	"github.com/Azure/azure-extension-foundation/internal/settings"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/Azure/azure-extension-foundation/errorhelper"
+	"github.com/Azure/azure-extension-foundation/internal/settings"
 )
 
 type statusReport []statusItem
@@ -37,7 +38,7 @@ type formattedMessage struct {
 // ReportStatus saves operation status to the status file for the extension
 // handler with the optional given message, if the given cmd requires reporting
 // status.
-//
+// Eg: <SeqNo>.status
 // If an error occurs reporting the status, it will be logged and returned.
 func ReportStatus(sequenceNumber int, opStatus string, operation, message string) error {
 	s := newStatus(opStatus, operation, message)
@@ -47,7 +48,28 @@ func ReportStatus(sequenceNumber int, opStatus string, operation, message string
 	}
 
 	if err := s.Save(hEnv.HandlerEnvironment.StatusFolder, sequenceNumber); err != nil {
-		//ctx.Log("event", "failed to save handler opStatus", "error", err)
+		return errorhelper.AddStackToError(fmt.Errorf("failed to save handler operation status : %s", err))
+	}
+	return nil
+}
+
+// ReportMultiConfigStatus saves operation status to the status file for the MultiConfig extension
+// handler with the optional given message, if the given cmd requires reporting
+// status.
+// Eg: <ExtName>.<SeqNo>.status
+// If an error occurs reporting the status, it will be logged and returned.
+func ReportMultiConfigStatus(sequenceNumber int, extensionName, opStatus, operation, message string) error {
+	if extensionName == "" {
+		return errorhelper.AddStackToError("Invalid Extension Name provided, it can not be empty for MultiConfig")
+	}
+
+	s := newStatus(opStatus, operation, message)
+	hEnv, err := settings.GetEnvironment()
+	if err != nil {
+		return errorhelper.AddStackToError(fmt.Errorf("unable to get handler environment settings : %v", err))
+	}
+
+	if err := s.SaveMultiConfig(hEnv.HandlerEnvironment.StatusFolder, sequenceNumber, extensionName); err != nil {
 		return errorhelper.AddStackToError(fmt.Errorf("failed to save handler operation status : %s", err))
 	}
 	return nil
@@ -58,8 +80,30 @@ func ReportStatus(sequenceNumber int, opStatus string, operation, message string
 // same folder and moving it to the final destination for atomicity.
 func (r statusReport) Save(statusFolder string, seqNum int) error {
 	fn := fmt.Sprintf("%d.status", seqNum)
-	path := filepath.Join(statusFolder, fn)
-	tmpFile, err := ioutil.TempFile(statusFolder, fn)
+	if err := r.saveStatusFile(statusFolder, fn); err != nil {
+		return errorhelper.AddStackToError(fmt.Errorf("Failed to save status file : %s", err))
+	}
+	return nil
+}
+
+// SaveMultiConfig persists the status message to the specified status folder using the
+// sequence number and extensionName. The operation consists of writing to a temporary file in the
+// same folder and moving it to the final destination for atomicity.
+func (r statusReport) SaveMultiConfig(statusFolder string, seqNum int, extensionName string) error {
+	if extensionName == "" {
+		return errorhelper.AddStackToError("Invalid Extension Name provided, it can not be empty for MultiConfig")
+	}
+
+	fn := fmt.Sprintf("%s.%d.status", extensionName, seqNum)
+	if err := r.saveStatusFile(statusFolder, fn); err != nil {
+		return errorhelper.AddStackToError(fmt.Errorf("Failed to save status file : %s", err))
+	}
+	return nil
+}
+
+func (r statusReport) saveStatusFile(statusFolder, fileName string) error {
+	path := filepath.Join(statusFolder, fileName)
+	tmpFile, err := ioutil.TempFile(statusFolder, fileName)
 	if err != nil {
 		return errorhelper.AddStackToError(fmt.Errorf("status: failed to create temporary file: %v", err))
 	}
