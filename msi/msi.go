@@ -6,11 +6,13 @@ package msi
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Azure/azure-extension-foundation/errorhelper"
-	"github.com/Azure/azure-extension-foundation/httputil"
 	"net/url"
+	"os"
 	"strconv"
 	"time"
+
+	"github.com/Azure/azure-extension-foundation/errorhelper"
+	"github.com/Azure/azure-extension-foundation/httputil"
 )
 
 const (
@@ -21,6 +23,8 @@ const (
 	resourceQueryParam = "resource"
 
 	armResourceUri = "https://management.core.windows.net/"
+
+	identityEnvVar = "IDENTITY_ENDPOINT"
 )
 
 type Msi struct {
@@ -51,7 +55,7 @@ func NewMsiProvider(client httputil.HttpClient) provider {
 
 func (p *provider) getMsiHelper(queryParams map[string]string) (*Msi, error) {
 	var msi = Msi{}
-	requestUrl, err := url.Parse(metadataIdentityURL)
+	requestUrl, err := url.Parse(GetMetadataIdentityURL())
 	if err != nil {
 		return &msi, err
 	}
@@ -126,4 +130,12 @@ func (msi *Msi) GetExpiryTime() (time.Time, error) {
 func (msi *Msi) GetJson() (string, error) {
 	jsonBytes, err := json.Marshal(msi)
 	return string(jsonBytes[:]), err
+}
+
+func GetMetadataIdentityURL() string {
+	envMetadataIdentityURL := os.Getenv(identityEnvVar)
+	if envMetadataIdentityURL != "" {
+		return envMetadataIdentityURL
+	}
+	return metadataIdentityURL
 }
