@@ -1,6 +1,6 @@
 module msi
 
-go 1.19
+go 1.23
 
 require github.com/Azure/azure-extension-foundation v0.0.0-20230404211847-9858bdd5c187
 
