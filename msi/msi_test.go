@@ -172,9 +172,10 @@ func TestCanGetImdsVariable(t *testing.T) {
 	}
 
 	//setting env var - should return test (or whatever var is set to)
-	os.Setenv(identityEnvVar, "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2024-12-19")
+	testVar := "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2024-12-19"
+	os.Setenv(identityEnvVar, testVar)
 	url = GetMetadataIdentityURL()
-	if url != "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2024-12-19" {
+	if url != testVar {
 		t.Fatal("mismatch URLs")
 	}
 
