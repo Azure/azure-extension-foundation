@@ -6,10 +6,11 @@ package msi
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Azure/azure-extension-foundation/httputil"
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/Azure/azure-extension-foundation/httputil"
 )
 
 func TestSuccessfulGetMsi(t *testing.T) {
@@ -160,4 +161,23 @@ func TestCanGetMsiForStoragetWithObjectId(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
+}
+
+func TestCanGetImdsVariable(t *testing.T) {
+
+	//without setting env var - should return metadataURL
+	url := GetMetadataIdentityURL()
+	if url != metadataIdentityURL {
+		t.Fatal("mismatch URLs")
+	}
+
+	//setting env var - should return test (or whatever var is set to)
+	testVar := "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2024-12-19"
+	os.Setenv(identityEnvVar, testVar)
+	url = GetMetadataIdentityURL()
+	if url != testVar {
+		t.Fatal("mismatch URLs")
+	}
+
+	os.Unsetenv(identityEnvVar)
 }
