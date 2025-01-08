@@ -1,8 +1,6 @@
-module msi
+module github.com/Azure/azure-extension-foundation
 
 go 1.23
-
-require github.com/Azure/azure-extension-foundation v0.0.0-20230404211847-9858bdd5c187
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
